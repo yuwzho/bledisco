@@ -1,0 +1,23 @@
+{
+  "name": "bledisco",
+  "version": "1.0.0",
+  "description": "descovery bluetooth device and show the mac address",
+  "main": "getMac.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuwzho/bledisco.git"
+  },
+  "keywords": [
+    "ble"
+  ],
+  "author": "yuwzho@microsoft.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yuwzho/bledisco/issues"
+  },
+  "homepage": "https://github.com/yuwzho/bledisco#readme",
+  "dependencies": {}
+}
