@@ -31,17 +31,17 @@ function startScan(timeout, callback) {
     
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
-    bluetoothctl.stdin.write("power on");
-    bluetoothctl.stdin.write("scan on");
+    bluetoothctl.stdin.write("power on\n");
+    bluetoothctl.stdin.write("scan on\n");
     bluetoothctl.stdout.on("data", (data) => {
-    	console.log(data);
+    	console.log(`${data}`);
     });
     bluetoothctl.stderr.on("data", (data) => {
-    	console.error(data);
+    	console.error(`${data}`);
     });
     setTimeout(function(){
-    	bluetoothctl.stdin.write("scan off");
-    	bluetoothctl.stdin.write("exit");
+    	bluetoothctl.stdin.write("scan off\n");
+    	bluetoothctl.stdin.write("exit\n");
     }, timeout);
 }
 
