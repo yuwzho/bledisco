@@ -9,32 +9,38 @@ const bluetoothctlMiniCompatibleVerion = 5.37;
 // @param timeout after timeout milliseconds, terminate the function itself
 // @param callback function to handle once a device is found 
 function startScan(timeout, callback) {
-	// unblock the bluetooth
-	exec("rfkill unblock bluetooth", {encoding: 'utf8'});
-	// check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
-	try{
-		exec("bluetoothctl --version", (error, stdout, stderr) => {
-			if(error) {
-				throw error;
-			}
-			if(stderr) {
-				throw new Error(stderr);
-			}
-			if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-				throw new Error("bluetoothclt version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-			}
-		});
-	}catch(err){
-		console.error(err.message);
-		return;
-	}
-	
-	// using bluetoothclt to discovery the device
-	// var bluetoothclt = spawn("bluetoothclt");
+    // unblock the bluetooth
+    exec("rfkill unblock bluetooth", {encoding: 'utf8'});
+    // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
+    try{
+        exec("bluetoothctl --version", (error, stdout, stderr) => {
+            if(error) {
+                throw error;
+            }
+            if(stderr) {
+                throw new Error(stderr);
+            }
+            if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+                throw new Error("bluetoothclt version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+            }
+        });
+    }catch(err){
+        console.error(err.message);
+        return;
+    }
+    
+    // using bluetoothctl to discovery the device
+    var bluetoothctl = spawn("bluetoothctl");
+    bluetoothctl.stdout.on("data", (data) => {
+    	console.log(data);
+    });
+    bluetoothctl.stderr.on("data", (data) => {
+    	console.error(data);
+    });
 }
 
 (function() {
-	startScan(10000, function(){
+    startScan(10000, function(){
 
-	});
+    });
 })()
