@@ -1,7 +1,7 @@
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var EventEmitter = require('events').EventEmitter;
-var util = require('util');
+var rl = require('readline');
 
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
@@ -21,7 +21,7 @@ function startScan(timeout, callback) {
                 throw new Error(stderr);
             }
             if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-                throw new Error("bluetoothclt version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+                throw new Error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
             }
         });
     }catch(err){
@@ -31,22 +31,35 @@ function startScan(timeout, callback) {
     
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
+    // [bluetoothctl] power on
     bluetoothctl.stdin.write("power on\n");
+    // [bluetoothctl] scan on
     bluetoothctl.stdin.write("scan on\n");
     bluetoothctl.stdout.on("data", (data) => {
-    	console.log(`${data}`);
+    	callback(data);
     });
     bluetoothctl.stderr.on("data", (data) => {
     	console.error(`${data}`);
     });
     setTimeout(function(){
+    	// [bluetoothctl] scan off
     	bluetoothctl.stdin.write("scan off\n");
+    	// [bluetoothctl] exit
     	bluetoothctl.stdin.write("exit\n");
-    }, timeout);
+    }, timeout || 10000);
+}
+
+function onDiscovery(stream) {
+	var rl = readline.createInterface({
+	    input: stream
+	});
+
+	rl.on('line', function(line){
+		console.log(line);
+	});
 }
 
 (function() {
-    startScan(10000, function(){
 
-    });
+    startScan(10000, onDiscovery);
 })()
