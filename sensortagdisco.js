@@ -31,17 +31,6 @@ function startScan(timeout, callback) {
     
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
-    // detect the output line
-    readline.createInterface({
-        input : bluetoothctl.stdout,
-        terminal : false
-    }).on('line', function(line) {
-        line = line.trim();
-        var bleObj = resolveBluetoothctlLine(line);
-        if(bleObj) {
-            callback(bleObj);
-        }
-    });
 
     bluetoothctl.stderr.on("data", (data) => {
         console.error(`${data}`);
@@ -51,12 +40,39 @@ function startScan(timeout, callback) {
     bluetoothctl.stdin.write("power on\n");
     // [bluetoothctl] scan on
     bluetoothctl.stdin.write("scan on\n");
+
     setTimeout(function(){
         // [bluetoothctl] scan off
         bluetoothctl.stdin.write("scan off\n");
-        // [bluetoothctl] exit
-        bluetoothctl.stdin.write("exit\n");
-    }, timeout || 10000);
+        
+    }, timeout || 5000);
+
+    // detect the output line
+    var deviceFound = false;
+    readline.createInterface({
+        input : bluetoothctl.stdout,
+        terminal : false
+    }).on('line', function(line) {
+        line = line.trim();
+        var macAddress = getSensorTagMac(line);
+        if(macAddress){
+            bluetoothctl.stdin.write("info " + macAddress + "\n");
+            return;
+        }
+    });
+    // [bluetoothctl] devices
+    bluetoothctl.stdin.write("devices");
+
+    // [bluetoothctl] exit
+    bluetoothctl.stdin.write("exit\n");
+}
+
+var deviceNameReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
+function getSensorTagMac(line) {
+    var match = deviceNameReg.exec(line);
+    if(match && match[3] === "CC2650 SensorTag") {
+        return match[1];
+    }
 }
 
 var deviceNameReg = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
@@ -112,5 +128,5 @@ function onDiscovery(bleObj) {
 
 (function() {
 
-    startScan(20000, onDiscovery);
+    startScan(5000, onDiscovery);
 })()
