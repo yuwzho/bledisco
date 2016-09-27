@@ -1,7 +1,7 @@
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var EventEmitter = require('events').EventEmitter;
-var rl = require('readline');
+var readline = require('readline');
 
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
@@ -31,32 +31,36 @@ function startScan(timeout, callback) {
     
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
+    // detect the output line
+    readline.createInterface({
+        input : bluetoothctl.stdout,
+        terminal : false
+    }).on('line', function(line) {
+        if(isDeviceDetected(line)) {
+            callback(line);
+        }
+    });
+    bluetoothctl.stderr.on("data", (data) => {
+        console.error(`${data}`);
+    });
+
     // [bluetoothctl] power on
     bluetoothctl.stdin.write("power on\n");
     // [bluetoothctl] scan on
     bluetoothctl.stdin.write("scan on\n");
-    bluetoothctl.stdout.on("data", (data) => {
-    	callback(data);
-    });
-    bluetoothctl.stderr.on("data", (data) => {
-    	console.error(`${data}`);
-    });
     setTimeout(function(){
-    	// [bluetoothctl] scan off
-    	bluetoothctl.stdin.write("scan off\n");
-    	// [bluetoothctl] exit
-    	bluetoothctl.stdin.write("exit\n");
+        // [bluetoothctl] scan off
+        bluetoothctl.stdin.write("scan off\n");
+        // [bluetoothctl] exit
+        bluetoothctl.stdin.write("exit\n");
     }, timeout || 10000);
 }
 
-function onDiscovery(stream) {
-	var rl = readline.createInterface({
-	    input: stream
-	});
+function isDeviceDetected(line) {
+    return line.indexOf("[NEW]") === 0 || line.indexOf("[CHG]") === 0;
+}
 
-	rl.on('line', function(line){
-		console.log(line);
-	});
+function onDiscovery(line) {
 }
 
 (function() {
