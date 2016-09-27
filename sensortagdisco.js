@@ -36,10 +36,13 @@ function startScan(timeout, callback) {
         input : bluetoothctl.stdout,
         terminal : false
     }).on('line', function(line) {
-        if(isDeviceDetected(line)) {
-            callback(line);
+        line = line.trim();
+        var bleObj = resolveBluetoothctlLine(line);
+        if(bleObj) {
+            callback(bleObj);
         }
     });
+
     bluetoothctl.stderr.on("data", (data) => {
         console.error(`${data}`);
     });
@@ -56,15 +59,58 @@ function startScan(timeout, callback) {
     }, timeout || 10000);
 }
 
-function isDeviceDetected(line) {
-    return line.indexOf("NEW") > 0 || line.indexOf("CHG") > 0;
+var deviceNameReg = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
+var deviceGAP = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+?\:)[ ]([0-9A-Fa-f\-]+)$/g;
+var deviceMan = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]ManufacturerData[ ]Key:[ ](0x[0-9A-Fa-f]+)$/g;
+function resolveBluetoothctlLine(line) {
+    // this is not a valid bluetoothctl device discovery line
+    if((line.indexOf("NEW") < 0 && line.indexOf("CHG") < 0)) { return; }
+    // name line
+    // e.g. Device 24:71:89:C0:C1:06 CC2650 SensorTag
+    var match = deviceNameReg.exec(line);
+    if(match) {  // <== Device name
+        var name = match[3];
+        if(name === "CC2650 SensorTag") {
+            return {
+                mac: match[1],
+                name: name
+            };
+        }else { return; }
+    }
+
+    // manufacturer line
+    // Device 24:71:89:C0:C1:06 ManufacturerData Key: 0x000d
+    match = deviceMan.exec(line);
+    if(match) {
+        var manufacturerData = match[3];
+        if(manufacturerData.toLower() === "0x000d") {
+            return {
+                mac: match[1],
+                manufacturer: manufacturerData
+            };
+        }else {
+            return;
+        }
+    }
 }
 
-function onDiscovery(line) {
-    console.log(line);
+function showDevice(device) {
+    console.log(device.mac + "       " + device.name + "         " + device.manufacturer);
+}
+
+var mapping = {};
+function onDiscovery(bleObj) {
+    var mac = bleObj.mac;
+    var storeObj = mapping[mac] || { mac: mac };
+    if(bleObj.name) { storeObj.name = bleObj.name; }
+    if(bleObj.manufacturer) { storeObj.manufacturer = bleObj.manufacturer; }
+    mapping[mac] = storeObj;
+    if(storeObj.name && storeObj.manufacturer) {
+        showDevice(storeObj);
+    }
 }
 
 (function() {
 
-    startScan(10000, onDiscovery);
+    startScan(20000, onDiscovery);
 })()
