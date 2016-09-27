@@ -57,10 +57,11 @@ function startScan(timeout, callback) {
 }
 
 function isDeviceDetected(line) {
-    return line.indexOf("[NEW]") === 0 || line.indexOf("[CHG]") === 0;
+    return line.indexOf("NEW") > 0 || line.indexOf("CHG") > 0;
 }
 
 function onDiscovery(line) {
+    console.log(line);
 }
 
 (function() {
