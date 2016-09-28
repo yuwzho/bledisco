@@ -12,11 +12,13 @@ function run(cmd, interact) {
     for (var i = 0; i < interact.length; i++) {
         ps.stdin.write(interact[i] + "\n")
     }
-    ps.stdin.end();
+    setTimeout(function(){
+    	ps.stdin.end();
+    }, 500);
     ps.stdout.on("data", (data) => {
         result += data;
     });
-    return data;
+    return result;
 }
 
 function eachLine(content, callback) {
@@ -67,8 +69,8 @@ function scanDevice(timeout) {
     bluetoothctl.stdin.write("scan on\n");
     setTimeout(function() {
         bluetoothctl.stdin.write("scan off");
+    	bluetoothctl.stdin.end();
     }, timeout);
-    bluetoothctl.stdin.end();
 }
 
 // unblock the bluetooth and check the bluetoothctl version
