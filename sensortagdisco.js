@@ -6,42 +6,9 @@ var readline = require('readline');
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
 
-// start to scan the bluetooth deive, once detect a device, call callback method to handle the device
-// @param timeout after timeout milliseconds, terminate the function itself
-// @param callback function to handle once a device is found 
-function startScan(timeout, callback) {
-    // unblock the bluetooth
-    exec("rfkill unblock bluetooth", {encoding: 'utf8'});
-    // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
-    try{
-        exec("bluetoothctl --version", (error, stdout, stderr) => {
-            if(error) {
-                throw error;
-            }
-            if(stderr) {
-                throw new Error(stderr);
-            }
-            if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-                throw new Error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            }
-        });
-    }catch(err){
-        console.error(err.message);
-        return;
-    }
-    
+function getDevices() {
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
-
-    // create promise to get the interactive result
-    function promiseCreator() {
-        return new Promise(function(resolve, reject) {
-            bluetoothctl.stdout.on("data", (data) => { resolve(data); } );
-        });
-    }
-    
-    // var promise = promiseCreator();
-
     var result = '';
     bluetoothctl.stdout.on('data', function (data) {
         // console.log('stdout: ' + data);
@@ -68,7 +35,67 @@ function startScan(timeout, callback) {
 
     setTimeout(function(){
         bluetoothctl.stdin.write('exit\n');
+    }, 5000);
+}
+
+function getDeviceInfo() {
+// using bluetoothctl to discovery the device
+    var bluetoothctl = spawn("bluetoothctl");
+var result = '';
+    bluetoothctl.stdout.on('data', function (data) {
+        // console.log('stdout: ' + data);
+        result += data;
+    });
+    bluetoothctl.on('close', function (code) {
+        console.log('---------------------\n' + result + '\n###############\n');
+    })
+
+    setTimeout(function(){
+        console.log('Sending stdin to terminal');
+        bluetoothctl.stdin.write('info 50:98:1C:CD:A9:29\n');
     }, 1000);
+
+    setTimeout(function(){
+        bluetoothctl.stdin.write('exit\n');
+    }, 5000);
+}
+
+// start to scan the bluetooth deive, once detect a device, call callback method to handle the device
+// @param timeout after timeout milliseconds, terminate the function itself
+// @param callback function to handle once a device is found 
+function startScan(timeout, callback) {
+    // unblock the bluetooth
+    exec("rfkill unblock bluetooth", {encoding: 'utf8'});
+    // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
+    try{
+        exec("bluetoothctl --version", (error, stdout, stderr) => {
+            if(error) {
+                throw error;
+            }
+            if(stderr) {
+                throw new Error(stderr);
+            }
+            if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+                throw new Error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+            }
+        });
+    }catch(err){
+        console.error(err.message);
+        return;
+    }
+    
+    
+    // create promise to get the interactive result
+    function promiseCreator() {
+        return new Promise(function(resolve, reject) {
+            bluetoothctl.stdout.on("data", (data) => { resolve(data); } );
+        });
+    }
+    
+    // var promise = promiseCreator();
+
+    getDevices();
+    getDeviceInfo();
     // Promise.all(promise).then(function(){
     //     var interactivePromise = promiseCreator();
     //     // [bluetoothctl] devices
