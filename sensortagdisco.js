@@ -42,18 +42,23 @@ function startScan(timeout, callback) {
     
     // var promise = promiseCreator();
 
+    var result = '';
     bluetoothctl.stdout.on('data', function (data) {
-        console.log('stdout: ' + data);
+        // console.log('stdout: ' + data);
+        result += data;
     });
+    bluetoothctl.on('close', function (code) {
+        console.log('---------------------\n' + result + '\n###############\n');
+    })
 
     setTimeout(function(){
         console.log('Sending stdin to terminal');
         bluetoothctl.stdin.write('power on\n');
-    }, 2000);
+    }, 1000);
 
     setTimeout(function(){
         bluetoothctl.stdin.write('scan on\n');
-    }, 2000);
+    }, 1000);
 
     setTimeout(function(){
         // [bluetoothctl] scan off
@@ -61,6 +66,9 @@ function startScan(timeout, callback) {
         console.log('Ending terminal session');
     }, timeout || 5000);
 
+    setTimeout(function(){
+        bluetoothctl.stdin.write('exit\n');
+    }, 1000);
     // Promise.all(promise).then(function(){
     //     var interactivePromise = promiseCreator();
     //     // [bluetoothctl] devices
