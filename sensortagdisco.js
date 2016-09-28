@@ -32,15 +32,6 @@ function startScan(timeout, callback) {
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
 
-    // [bluetoothctl] power on
-    bluetoothctl.stdin.write("power on\n");
-    // [bluetoothctl] scan on
-    bluetoothctl.stdin.write("scan on\n");
-
-    setTimeout(function(){
-        // [bluetoothctl] scan off
-        bluetoothctl.stdin.write("scan off\n");
-
     // create promise to get the interactive result
     function promiseCreator() {
         return new Promise(function(resolve, reject) {
@@ -49,32 +40,45 @@ function startScan(timeout, callback) {
     }
 
     var promise = promiseCreator();
-    // [bluetoothctl] devices
-    bluetoothctl.stdin.write("devices\n");
+    // [bluetoothctl] power on
+    bluetoothctl.stdin.write("power on\n");
+    bluetoothctl.stdout.on("data", (data) => { console.log("power on !!!!!!" + data); });
+    // [bluetoothctl] scan on
+    bluetoothctl.stdin.write("scan on\n");
+    bluetoothctl.stdout.on("data", (data) => { console.log("scan on !!!!!!" + data); });
 
-    promise.then(function (data){
-        // foreach device get information
-        var deviceLines = splitByLine(data);
-        deviceLines.forEach(function(deviceLine) {
-	    // console.log(deviceLine);
-            var deviceBrief = resolveDeviceLine(deviceLine);
-            if(deviceBrief && deviceBrief.name === "CC2650 SensorTag") {
-		console.log(deviceBrief.mac);
-                bluetoothctl.stdin.write("info " + deviceBrief.mac);
-            }
-        });
-    }).then(function (data) {
-        callback(data);
-    }).then(function(data){
-    	// [bluetoothctl] exit
-    	bluetoothctl.stdin.write("exit\n");
-    }); 
+    setTimeout(function(){
+        // [bluetoothctl] scan off
+        bluetoothctl.stdin.write("scan off\n");
+        bluetoothctl.stdout.on("data", (data) => { console.log("scan off !!!!!!" + data); });
     }, timeout || 5000);
+
+    // Promise.all(promise).then(function(){
+    //     var interactivePromise = promiseCreator();
+    //     // [bluetoothctl] devices
+    //     bluetoothctl.stdin.write("devices\n");
+
+    //     interactivePromise.then(function (data){
+    //         // foreach device get information
+    //         var deviceLines = splitByLine(data);
+    //         deviceLines.forEach(function(deviceLine) {
+    //         // console.log(deviceLine);
+    //             var deviceBrief = resolveDeviceLine(deviceLine);
+    //             if(deviceBrief && deviceBrief.name === "CC2650 SensorTag") {
+    //                 bluetoothctl.stdin.write("info " + deviceBrief.mac);
+    //             }
+    //         });
+    //     }).then(function (data) {
+    //         callback(data);
+    //     }).then(function(data){
+    //         // [bluetoothctl] exit
+    //         bluetoothctl.stdin.write("exit\n");
+    //     }); 
+    // });
 }
 
 var deviceNameReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
 function resolveDeviceLine(line) {
-   console.log("> " + line);
     var match = deviceNameReg.exec(line);
     if(match) {
         return {
