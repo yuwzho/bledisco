@@ -5,6 +5,19 @@ var readline = require('readline');
 
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
+
+function run(cmd, callback) {
+    var spawn = require('child_process').spawn;
+    var command = spawn(cmd);
+    var result = '';
+    command.stdout.on('data', function(data) {
+         result += data.toString();
+    });
+    command.on('close', function(code) {
+        return callback(result);
+    });
+}
+
 // start to scan the bluetooth deive, once detect a device, call callback method to handle the device
 // @param timeout after timeout milliseconds, terminate the function itself
 // @param callback function to handle once a device is found 
@@ -39,19 +52,21 @@ function startScan(timeout, callback) {
         });
     }
 
-    var promise = promiseCreator();
-    // [bluetoothctl] power on
-    bluetoothctl.stdin.write("power on\n");
-    bluetoothctl.stdout.on("data", (data) => { console.log("power on !!!!!!" + data); });
-    // [bluetoothctl] scan on
-    bluetoothctl.stdin.write("scan on\n");
-    bluetoothctl.stdout.on("data", (data) => { console.log("scan on !!!!!!" + data); });
+    run("power on", function(result) {console.log(result);});
 
-    setTimeout(function(){
-        // [bluetoothctl] scan off
-        bluetoothctl.stdin.write("scan off\n");
-        bluetoothctl.stdout.on("data", (data) => { console.log("scan off !!!!!!" + data); });
-    }, timeout || 5000);
+    // var promise = promiseCreator();
+    // [bluetoothctl] power on
+    // bluetoothctl.stdin.write("power on\n");
+    // bluetoothctl.stdout.on("data", (data) => { console.log("power on !!!!!!" + data); });
+    // [bluetoothctl] scan on
+    // bluetoothctl.stdin.write("scan on\n");
+    // bluetoothctl.stdout.on("data", (data) => { console.log("scan on !!!!!!" + data); });
+
+    // setTimeout(function(){
+    //     // [bluetoothctl] scan off
+    //     bluetoothctl.stdin.write("scan off\n");
+    //     bluetoothctl.stdout.on("data", (data) => { console.log("scan off !!!!!!" + data); });
+    // }, timeout || 5000);
 
     // Promise.all(promise).then(function(){
     //     var interactivePromise = promiseCreator();
