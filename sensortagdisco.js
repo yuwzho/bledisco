@@ -42,18 +42,23 @@ function startScan(timeout, callback) {
     
     // var promise = promiseCreator();
 
-    terminal.stdout.on('data', function (data) {
+    bluetoothctl.stdout.on('data', function (data) {
         console.log('stdout: ' + data);
     });
 
-    console.log('Sending stdin to terminal');
-    bluetoothctl.stdin.write("power on\n");
-    bluetoothctl.stdin.write("scan on\n");
+    setTimeout(function(){
+        console.log('Sending stdin to terminal');
+        bluetoothctl.stdin.write('power on\n');
+    }, 2000);
+
+    setTimeout(function(){
+        bluetoothctl.stdin.write('scan on\n');
+    }, 2000);
+
     setTimeout(function(){
         // [bluetoothctl] scan off
-        bluetoothctl.stdin.write("scan off\n");
+        bluetoothctl.stdin.write('scan off\n');
         console.log('Ending terminal session');
-        bluetoothctl.stdin.end();
     }, timeout || 5000);
 
     // Promise.all(promise).then(function(){
