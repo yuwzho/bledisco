@@ -32,10 +32,6 @@ function startScan(timeout, callback) {
     // using bluetoothctl to discovery the device
     var bluetoothctl = spawn("bluetoothctl");
 
-    bluetoothctl.stderr.on("data", (data) => {
-        console.error(`${data}`);
-    });
-
     // [bluetoothctl] power on
     bluetoothctl.stdin.write("power on\n");
     // [bluetoothctl] scan on
@@ -47,86 +43,92 @@ function startScan(timeout, callback) {
         
     }, timeout || 5000);
 
-    // detect the output line
-    var deviceFound = false;
-    readline.createInterface({
-        input : bluetoothctl.stdout,
-        terminal : false
-    }).on('line', function(line) {
-        line = line.trim();
-        var macAddress = getSensorTagMac(line);
-        if(macAddress){
-            bluetoothctl.stdin.write("info " + macAddress + "\n");
-            return;
-        }
-    });
+    // create promise to get the interactive result
+    function promiseCreator() {
+        return new Promise(function(resolve, reject) {
+            bluetoothctl.stdout.on("data", (data) => { resolve(data); } );
+        });
+    }
+
+    var promise = promiseCreator();
     // [bluetoothctl] devices
     bluetoothctl.stdin.write("devices");
 
+    promise.then(function (data){
+        // foreach device get information
+        var deviceLines = splitByLine(data);
+        deviceLines.forEach(function(deviceLine) {
+            var deviceBrief = resolveDeviceLine(deviceLine);
+            if(deviceBrief && deviceBrief.name === "CC2650 SensorTag") {
+                bluetoothctl.stdin.write("info " + deviceBrief.mac);
+            }
+        });
+        return promiseCreator();
+    }).then(function (data) {
+        callback(data);
+    });
     // [bluetoothctl] exit
     bluetoothctl.stdin.write("exit\n");
 }
 
 var deviceNameReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
-function getSensorTagMac(line) {
+function resolveDeviceLine(line) {
     var match = deviceNameReg.exec(line);
-    if(match && match[3] === "CC2650 SensorTag") {
-        return match[1];
+    if(match) {
+        return {
+            mac: match[1],
+            name: match[3]
+        };
     }
 }
 
-var deviceNameReg = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
+function splitByLine(data) {
+    var content = "" + data;
+    return content.replace(/\r\n/g, "\n").split("\n+");
+}
+
+var deviceMacReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/g;
 var deviceGAP = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+?\:)[ ]([0-9A-Fa-f\-]+)$/g;
 var deviceMan = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]ManufacturerData[ ]Key:[ ](0x[0-9A-Fa-f]+)$/g;
-function resolveBluetoothctlLine(line) {
-    // this is not a valid bluetoothctl device discovery line
-    if((line.indexOf("NEW") < 0 && line.indexOf("CHG") < 0)) { return; }
-    // name line
-    // e.g. Device 24:71:89:C0:C1:06 CC2650 SensorTag
-    var match = deviceNameReg.exec(line);
-    if(match) {  // <== Device name
-        var name = match[3];
-        if(name === "CC2650 SensorTag") {
-            return {
-                mac: match[1],
-                name: name
-            };
-        }else { return; }
-    }
-
-    // manufacturer line
-    // Device 24:71:89:C0:C1:06 ManufacturerData Key: 0x000d
-    match = deviceMan.exec(line);
-    if(match) {
-        var manufacturerData = match[3];
-        if(manufacturerData.toLower() === "0x000d") {
-            return {
-                mac: match[1],
-                manufacturer: manufacturerData
-            };
-        }else {
-            return;
-        }
-    }
-}
-
-function showDevice(device) {
-    console.log(device.mac + "       " + device.name + "         " + device.manufacturer);
-}
-
 var mapping = {};
 function onDiscovery(bleObj) {
-    var mac = bleObj.mac;
-    var storeObj = mapping[mac] || { mac: mac };
-    if(bleObj.name) { storeObj.name = bleObj.name; }
-    if(bleObj.manufacturer) { storeObj.manufacturer = bleObj.manufacturer; }
-    mapping[mac] = storeObj;
-    if(storeObj.name && storeObj.manufacturer) {
-        showDevice(storeObj);
-    }
+    // this is not a valid bluetoothctl device discovery line
+    var infoLines = splitByLine(data);
+    if(infoLines || infoLines.length === 0) { return; }
+    // first line must be mac line: Device 24:71:89:C0:C1:06
+    var match = deviceMacReg.exec(infoLines[0]);
+    if(!match) { return; }
+    infoLines.forEach(function(line){
+        console.log(line);
+    });
+
+    // var match = deviceNameReg.exec(line);
+    // if(match) {  // <== Device name
+    //     var name = match[3];
+    //     if(name === "CC2650 SensorTag") {
+    //         return {
+    //             mac: match[1],
+    //             name: name
+    //         };
+    //     }else { return; }
+    // }
+
+    // // manufacturer line
+    // // Device 24:71:89:C0:C1:06 ManufacturerData Key: 0x000d
+    // match = deviceMan.exec(line);
+    // if(match) {
+    //     var manufacturerData = match[3];
+    //     if(manufacturerData.toLower() === "0x000d") {
+    //         return {
+    //             mac: match[1],
+    //             manufacturer: manufacturerData
+    //         };
+    //     }else {
+    //         return;
+    //     }
+    // }
 }
 
 (function() {
-
     startScan(5000, onDiscovery);
 })()
