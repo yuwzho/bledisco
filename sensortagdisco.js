@@ -3,181 +3,98 @@ var spawn = require('child_process').spawn;
 var EventEmitter = require('events').EventEmitter;
 var readline = require('readline');
 
-
 const bluetoothctlMiniCompatibleVerion = 5.37;
 
+function run(cmd, interact) {
+    var ps = spawn(cmd),
+        result = "";
+    interact = interact || [];
+    for (var i = 0; i < interact.length; i++) {
+        ps.stdin.write(interact[i] + "\n")
+    }
+    ps.stdin.end();
+    ps.stdout.on("data", (data) => {
+        result += data;
+    });
+    return data;
+}
+
+function eachLine(content, callback) {
+    var lines = ("" + content).replace(/\r\n/g, "\n").split("\n+");
+    for (var i = 0; i < lines.length; i++) {
+        callback(lines[i]);
+    }
+}
+
+function filter(line) {
+    function resolveDeviceName(line) {
+        var reg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
+        var match = reg.exec(line);
+        if(match) {
+            return {
+                mac: match[1],
+                name: match[3]
+            };
+        }
+    }
+
+    function resolveDeviceInfo(content) {
+        return content;
+    }
+
+    function show(device){
+        console.log("=========\n");
+        console.log(device);
+        console.log("#########\n");
+    }
+
+    var deviceName = resolveDeviceName(line);
+    if(deviceName){
+        var device = resolveDeviceInfo(run("bluetoothctl", ["info " + deviceName.mac]));
+        // if ....
+        show(device);
+    }
+}
+
 function getDevices() {
-    // using bluetoothctl to discovery the device
-    var bluetoothctl = spawn("bluetoothctl");
-    var result = '';
-    bluetoothctl.stdout.on('data', function (data) {
-        // console.log('stdout: ' + data);
-        result += data;
-    });
-    bluetoothctl.on('close', function (code) {
-        console.log('---------------------\n' + result + '\n###############\n');
-    })
-
-    setTimeout(function(){
-        console.log('Sending stdin to terminal');
-        bluetoothctl.stdin.write('power on\n');
-    }, 1000);
-
-    setTimeout(function(){
-        bluetoothctl.stdin.write('scan on\n');
-    }, 1000);
-
-    setTimeout(function(){
-        // [bluetoothctl] scan off
-        bluetoothctl.stdin.write('scan off\n');
-        console.log('Ending terminal session');
-    }, timeout || 5000);
-
-    setTimeout(function(){
-        bluetoothctl.stdin.write('exit\n');
-    }, 5000);
+    return run("bluetoothctl", ["devices"]);
 }
 
-function getDeviceInfo() {
-// using bluetoothctl to discovery the device
+// turn on the scan and scan the BLE devices
+function scanDevice(timeout) {
     var bluetoothctl = spawn("bluetoothctl");
-var result = '';
-    bluetoothctl.stdout.on('data', function (data) {
-        // console.log('stdout: ' + data);
-        result += data;
-    });
-    bluetoothctl.on('close', function (code) {
-        console.log('---------------------\n' + result + '\n###############\n');
-    })
-
-    setTimeout(function(){
-        console.log('Sending stdin to terminal');
-        bluetoothctl.stdin.write('info 50:98:1C:CD:A9:29\n');
-    }, 1000);
-
-    setTimeout(function(){
-        bluetoothctl.stdin.write('exit\n');
-    }, 5000);
+    bluetoothctl.stdin.write("power on\n");
+    bluetoothctl.stdin.write("scan on\n");
+    setTimeout(function() {
+        bluetoothctl.stdin.write("scan off");
+    }, timeout);
+    bluetoothctl.stdin.end();
 }
 
-// start to scan the bluetooth deive, once detect a device, call callback method to handle the device
-// @param timeout after timeout milliseconds, terminate the function itself
-// @param callback function to handle once a device is found 
-function startScan(timeout, callback) {
+// unblock the bluetooth and check the bluetoothctl version
+function initEnv() {
     // unblock the bluetooth
     exec("rfkill unblock bluetooth", {encoding: 'utf8'});
     // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
-    try{
-        exec("bluetoothctl --version", (error, stdout, stderr) => {
-            if(error) {
-                throw error;
-            }
-            if(stderr) {
-                throw new Error(stderr);
-            }
-            if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-                throw new Error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            }
-        });
-    }catch(err){
-        console.error(err.message);
-        return;
-    }
-    
-    
-    // create promise to get the interactive result
-    function promiseCreator() {
-        return new Promise(function(resolve, reject) {
-            bluetoothctl.stdout.on("data", (data) => { resolve(data); } );
-        });
-    }
-    
-    // var promise = promiseCreator();
-
-    getDevices();
-    getDeviceInfo();
-    // Promise.all(promise).then(function(){
-    //     var interactivePromise = promiseCreator();
-    //     // [bluetoothctl] devices
-    //     bluetoothctl.stdin.write("devices\n");
-
-    //     interactivePromise.then(function (data){
-    //         // foreach device get information
-    //         var deviceLines = splitByLine(data);
-    //         deviceLines.forEach(function(deviceLine) {
-    //         // console.log(deviceLine);
-    //             var deviceBrief = resolveDeviceLine(deviceLine);
-    //             if(deviceBrief && deviceBrief.name === "CC2650 SensorTag") {
-    //                 bluetoothctl.stdin.write("info " + deviceBrief.mac);
-    //             }
-    //         });
-    //     }).then(function (data) {
-    //         callback(data);
-    //     }).then(function(data){
-    //         // [bluetoothctl] exit
-    //         bluetoothctl.stdin.write("exit\n");
-    //     }); 
-    // });
-}
-
-var deviceNameReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
-function resolveDeviceLine(line) {
-    var match = deviceNameReg.exec(line);
-    if(match) {
-        return {
-            mac: match[1],
-            name: match[3]
-        };
-    }
-}
-
-function splitByLine(data) {
-    var content = "" + data;
-    return content.replace(/\r\n/g, "\n").split("\n+");
-}
-
-var deviceMacReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/g;
-var deviceGAP = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+?\:)[ ]([0-9A-Fa-f\-]+)$/g;
-var deviceMan = /Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]ManufacturerData[ ]Key:[ ](0x[0-9A-Fa-f]+)$/g;
-var mapping = {};
-function onDiscovery(bleObj) {
-    // this is not a valid bluetoothctl device discovery line
-    var infoLines = splitByLine(data);
-    if(infoLines || infoLines.length === 0) { return; }
-    // first line must be mac line: Device 24:71:89:C0:C1:06
-    var match = deviceMacReg.exec(infoLines[0]);
-    if(!match) { return; }
-    infoLines.forEach(function(line){
-        console.log(line);
+    exec("bluetoothctl --version", (error, stdout, stderr) => {
+        if(error) {
+            console.error(error);
+            return false;
+        }
+        if(stderr) {
+            console.error(stderr);
+            return false;
+        }
+        if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+            console.error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+            return false;
+        }
     });
-
-    // var match = deviceNameReg.exec(line);
-    // if(match) {  // <== Device name
-    //     var name = match[3];
-    //     if(name === "CC2650 SensorTag") {
-    //         return {
-    //             mac: match[1],
-    //             name: name
-    //         };
-    //     }else { return; }
-    // }
-
-    // // manufacturer line
-    // // Device 24:71:89:C0:C1:06 ManufacturerData Key: 0x000d
-    // match = deviceMan.exec(line);
-    // if(match) {
-    //     var manufacturerData = match[3];
-    //     if(manufacturerData.toLower() === "0x000d") {
-    //         return {
-    //             mac: match[1],
-    //             manufacturer: manufacturerData
-    //         };
-    //     }else {
-    //         return;
-    //     }
-    // }
+    return true;
 }
 
-(function() {
-    startScan(5000, onDiscovery);
+(function(timeout) {
+    if(!initEnv()){ return; }
+    scanDevice(timeout || 5000);
+    eachLine(getDevices(), filter);
 })()
