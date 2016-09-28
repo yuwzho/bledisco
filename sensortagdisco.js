@@ -40,8 +40,6 @@ function startScan(timeout, callback) {
     setTimeout(function(){
         // [bluetoothctl] scan off
         bluetoothctl.stdin.write("scan off\n");
-        
-    }, timeout || 5000);
 
     // create promise to get the interactive result
     function promiseCreator() {
@@ -52,27 +50,31 @@ function startScan(timeout, callback) {
 
     var promise = promiseCreator();
     // [bluetoothctl] devices
-    bluetoothctl.stdin.write("devices");
+    bluetoothctl.stdin.write("devices\n");
 
     promise.then(function (data){
         // foreach device get information
         var deviceLines = splitByLine(data);
         deviceLines.forEach(function(deviceLine) {
+	    // console.log(deviceLine);
             var deviceBrief = resolveDeviceLine(deviceLine);
             if(deviceBrief && deviceBrief.name === "CC2650 SensorTag") {
+		console.log(deviceBrief.mac);
                 bluetoothctl.stdin.write("info " + deviceBrief.mac);
             }
         });
-        return promiseCreator();
     }).then(function (data) {
         callback(data);
-    });
-    // [bluetoothctl] exit
-    bluetoothctl.stdin.write("exit\n");
+    }).then(function(data){
+    	// [bluetoothctl] exit
+    	bluetoothctl.stdin.write("exit\n");
+    }); 
+    }, timeout || 5000);
 }
 
 var deviceNameReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
 function resolveDeviceLine(line) {
+   console.log("> " + line);
     var match = deviceNameReg.exec(line);
     if(match) {
         return {
