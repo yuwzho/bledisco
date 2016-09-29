@@ -107,6 +107,7 @@ function initEnv() {
 }
 
 (function(timeout) {
-    if(!initEnv() && !scanDevice(timeout || 5000)){ return; }
+    if(!initEnv()){ return; }
+    if(!scanDevice(timeout || 5000)) { return; }
     getDevices();
 })()
