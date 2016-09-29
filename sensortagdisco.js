@@ -75,7 +75,7 @@ function scanDevice(timeout) {
         bluetoothctl.stdin.write("scan on\n");
         setTimeout(function() {
             bluetoothctl.stdin.write("scan off\n");
-            bluetoothctl.stdin.write("exit");
+            bluetoothctl.stdin.write("exit\n");
         }, timeout);
     }catch(err) {
         console.log(err);
