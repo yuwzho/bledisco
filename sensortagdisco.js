@@ -5,7 +5,7 @@ var readline = require('readline');
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
 
-function run(cmd, interact) {
+function run(cmd, interact, callback) {
     var ps = spawn(cmd),
         result = "";
     interact = interact || [];
@@ -13,12 +13,14 @@ function run(cmd, interact) {
         ps.stdin.write(interact[i] + "\n")
     }
     setTimeout(function() {
-        ps.stdin.end();
+        ps.stdin.write("exit\n");
     }, 500);
     ps.stdout.on("data", (data) => {
         result += data;
     });
-    return result;
+    ps.on("close", (code) => {
+        callback(result);        
+    });
 }
 
 function eachLine(content, callback) {
@@ -52,14 +54,17 @@ function filter(line) {
 
     var deviceName = resolveDeviceName(line);
     if(deviceName){
-        var device = resolveDeviceInfo(run("bluetoothctl", ["info " + deviceName.mac]));
-        // if ....
-        show(device);
+        resolveDeviceInfo(run("bluetoothctl", ["info " + deviceName.mac], (device) => { 
+            // if.....filter
+            show(device); 
+        }));
     }
 }
 
 function getDevices() {
-    return run("bluetoothctl", ["devices"]);
+    run("bluetoothctl", ["devices"], (devices) => {
+        eachLine(devices, filter);
+    });
 }
 
 // turn on the scan and scan the BLE devices
@@ -103,5 +108,5 @@ function initEnv() {
 
 (function(timeout) {
     if(!initEnv() && !scanDevice(timeout || 5000)){ return; }
-    eachLine(getDevices(), filter);
+    getDevices();
 })()
