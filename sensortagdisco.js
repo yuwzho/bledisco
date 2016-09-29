@@ -12,11 +12,13 @@ function run(cmd, interact) {
     for (var i = 0; i < interact.length; i++) {
         ps.stdin.write(interact[i] + "\n")
     }
-    ps.stdin.end();
+    setTimeout(function() {
+        ps.stdin.end();
+    }, 500);
     ps.stdout.on("data", (data) => {
         result += data;
     });
-    return data;
+    return result;
 }
 
 function eachLine(content, callback) {
@@ -62,13 +64,19 @@ function getDevices() {
 
 // turn on the scan and scan the BLE devices
 function scanDevice(timeout) {
-    var bluetoothctl = spawn("bluetoothctl");
-    bluetoothctl.stdin.write("power on\n");
-    bluetoothctl.stdin.write("scan on\n");
-    setTimeout(function() {
-        bluetoothctl.stdin.write("scan off");
-    }, timeout);
-    bluetoothctl.stdin.end();
+    try{
+        var bluetoothctl = spawn("bluetoothctl");
+        bluetoothctl.stdin.write("power on\n");
+        bluetoothctl.stdin.write("scan on\n");
+        setTimeout(function() {
+            bluetoothctl.stdin.write("scan off\n");
+            bluetoothctl.stdin.write("exit");
+        }, timeout);
+    }catch(err) {
+        console.log(err);
+        return false;
+    }
+    return true;
 }
 
 // unblock the bluetooth and check the bluetoothctl version
@@ -94,7 +102,6 @@ function initEnv() {
 }
 
 (function(timeout) {
-    if(!initEnv()){ return; }
-    scanDevice(timeout || 5000);
+    if(!initEnv() && !scanDevice(timeout || 5000)){ return; }
     eachLine(getDevices(), filter);
 })()
