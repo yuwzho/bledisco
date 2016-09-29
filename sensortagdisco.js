@@ -32,7 +32,7 @@ function eachLine(content, callback) {
 
 function filter(line) {
     function resolveDeviceName(line) {
-        var reg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/g;
+        var reg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/gm;
         var match = reg.exec(line);
         if(match) {
             return {
@@ -54,10 +54,11 @@ function filter(line) {
 
     var deviceName = resolveDeviceName(line);
     if(deviceName){
-        resolveDeviceInfo(run("bluetoothctl", ["info " + deviceName.mac], (device) => { 
+        run("bluetoothctl", ["info " + deviceName.mac], (deviceInfo) => { 
             // if.....filter
+            var device = resolveDeviceInfo(deviceInfo);
             show(device); 
-        }));
+        });
     }
 }
 
