@@ -5,7 +5,7 @@ const bluetoothctlMiniCompatibleVerion = 5.37;
 
 function run(cmd, interact, callback) {
     var ps = spawn(cmd),
-        result = "";
+        result = "", err = "";
     interact = interact || [];
     for (var i = 0; i < interact.length; i++) {
         ps.stdin.write(interact[i] + "\n")
@@ -16,8 +16,15 @@ function run(cmd, interact, callback) {
     ps.stdout.on("data", (data) => {
         result += data;
     });
+    ps.stderr.on("data", (data) => {
+        result += data;
+    });
     ps.on("close", (code) => {
-        callback(result);        
+        if(err === "") {
+            callback(result);
+        }else{
+            callback(result, err);
+        }        
     });
 }
 
@@ -42,9 +49,9 @@ function filter(line) {
 
     function resolveDeviceInfo(content) {
         var device = {};
-        var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
-        var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
         eachLine(content, (line) => {
+            var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
+            var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
             var match = infoReg.exec(line);
             if(match) {
                 device[match[1]] = match[2];
@@ -64,16 +71,26 @@ function filter(line) {
     }
 
     var deviceName = resolveDeviceName(line);
-    if(deviceName && deviceName.name === "CC2650 SensorTag"){
-        run("bluetoothctl", ["info " + deviceName.mac], (deviceInfo) => { 
+    if(deviceName){
+        run("bluetoothctl", ["info " + deviceName.mac], (deviceInfo, err) => { 
+            if(err) {
+                console.error(err);
+                return;
+            }
             var device = resolveDeviceInfo(deviceInfo);
-            show(device); 
+            if(device["Alias"] === "CC2650 SensorTag" && device["ManufacturerData Key"] === "0x000d") {
+                show(device); 
+            }
         });
     }
 }
 
 function getDevices() {
-    run("bluetoothctl", ["devices"], (devices) => {
+    run("bluetoothctl", ["devices"], (devices, err) => {
+        if(err) {
+            console.error(err);
+            return;
+        }
         eachLine(devices, filter);
     });
 }
