@@ -60,9 +60,7 @@ function filter(line) {
     }
 
     function show(device){
-        console.log("=========\n");
         console.log(JSON.stringify(device));
-        console.log("#########\n");
     }
 
     var deviceName = resolveDeviceName(line);
