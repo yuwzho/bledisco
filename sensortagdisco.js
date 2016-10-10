@@ -1,7 +1,5 @@
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
-var EventEmitter = require('events').EventEmitter;
-var readline = require('readline');
 
 const bluetoothctlMiniCompatibleVerion = 5.37;
 
@@ -43,19 +41,33 @@ function filter(line) {
     }
 
     function resolveDeviceInfo(content) {
-        return content;
+        var device = {};
+        var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
+        var infoReg = /^[ ]+(.+)?:[ ](.+)$/gm;
+        eachLine(content, (line) => {
+            var match = infoReg.exec(line);
+            if(match) {
+                device[match[1]] = match[2];
+                return;
+            }
+            match = deviceReg.exec(line);
+            if(match) {
+                device["mac"] = match[1];
+                return;
+            }
+        });
+        return device;
     }
 
     function show(device){
         console.log("=========\n");
-        console.log(device);
+        console.log(JSON.stringify(device));
         console.log("#########\n");
     }
 
     var deviceName = resolveDeviceName(line);
-    if(deviceName){
+    if(deviceName && deviceName.name === "CC2650 SensorTag"){
         run("bluetoothctl", ["info " + deviceName.mac], (deviceInfo) => { 
-            // if.....filter
             var device = resolveDeviceInfo(deviceInfo);
             show(device); 
         });
