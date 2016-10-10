@@ -59,7 +59,7 @@ function filter(line) {
             }
             match = deviceReg.exec(line);
             if(match) {
-                device["mac"] = match[1];
+                device["Mac"] = match[1];
                 return;
             }
         });
@@ -78,7 +78,7 @@ function filter(line) {
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
-            if(device["Alias"] === "CC2650 SensorTag" && device["ManufacturerData Key"] === "0x000d") {
+            if(device["Alias"] === "CC2650 SensorTag" && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())) {
                 show(device); 
             }
         });
