@@ -22,7 +22,7 @@ function run(cmd, interact, callback) {
 }
 
 function eachLine(content, callback) {
-    var lines = ("" + content).replace(/\r\n/g, "\n").split("\n+");
+    var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
     for (var i = 0; i < lines.length; i++) {
         callback(lines[i]);
     }
@@ -43,7 +43,7 @@ function filter(line) {
     function resolveDeviceInfo(content) {
         var device = {};
         var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
-        var infoReg = /^[ ]+(.+)?:[ ](.+)$/gm;
+        var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
         eachLine(content, (line) => {
             var match = infoReg.exec(line);
             if(match) {
