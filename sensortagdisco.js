@@ -122,5 +122,7 @@ function initEnv() {
 (function(timeout) {
     if(!initEnv()){ return; }
     if(!scanDevice(timeout || 5000)) { return; }
-    getDevices();
+    setTimeout(function() {
+        getDevices();
+    }, 500);
 })()
