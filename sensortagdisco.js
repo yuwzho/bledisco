@@ -96,26 +96,41 @@ function getDevices() {
 }
 
 // turn on the scan and scan the BLE devices
-function scanDevice(timeout) {
-    try{
-        var bluetoothctl = spawn("bluetoothctl");
-        bluetoothctl.stdin.write("power on\n");
-        bluetoothctl.stdin.write("scan on\n");
-        setTimeout(function() {
-            bluetoothctl.stdin.write("scan off\n");
-            bluetoothctl.stdin.write("exit\n");
-        }, timeout);
-    }catch(err) {
-        console.log(err);
-        return false;
-    }
-    return true;
+function scanDevice(timeout, callback) {
+    var err = "";
+    var bluetoothctl = spawn("bluetoothctl");
+    bluetoothctl.stdin.write("power on\n");
+    bluetoothctl.stdin.write("scan on\n");
+    setTimeout(function() {
+        bluetoothctl.stdin.write("scan off\n");
+        bluetoothctl.stdin.write("exit\n");
+    }, timeout);
+    bluetoothctl.stderr.on("data", (data) => {
+        err += data;
+    });
+    bluetoothctl.on("close", (code) => {
+        if(error !== ""){
+            callback(err);
+        }else{
+            callback();
+        }
+    });
 }
 
 // unblock the bluetooth and check the bluetoothctl version
 function initEnv() {
     // unblock the bluetooth
-    exec("rfkill unblock bluetooth", {encoding: 'utf8'});
+    exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
+        if(error) {
+            console.error(error);
+            return false;
+        }
+        if(stderr) {
+            console.error(stderr);
+            return false;
+        }
+    });
+
     // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
     exec("bluetoothctl --version", (error, stdout, stderr) => {
         if(error) {
@@ -136,8 +151,13 @@ function initEnv() {
 
 (function(timeout) {
     if(!initEnv()){ return; }
-    if(!scanDevice(timeout || 5000)) { return; }
-    setTimeout(function() {
-        getDevices();
-    }, 500);
+    scanDevice(timeout || 5000, (error) => {
+        if(error) { 
+            console.error(error);
+            return;
+        }
+        setTimeout(function() {
+            getDevices();
+        }, 1000);
+    });
 })()
