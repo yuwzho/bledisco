@@ -44,9 +44,6 @@ function interact(action, callback) {
 	var ps = spawn("bluetoothctl"),
         result = "", err = "";
     action(ps);
-    setTimeout(function() {
-        ps.stdin.write("exit\n");
-    }, 500);
 
     // get all stdout and stderr output
     ps.stdout.on("data", (data) => {
@@ -73,6 +70,9 @@ function run(interacts, callback) {
 	    for (var i = 0; i < interacts.length; i++) {
 	        ps.stdin.write(interacts[i] + "\n");
 	    }
+	    setTimeout(function() {
+        	ps.stdin.write("exit\n");
+    	}, 500);
 	}, callback);
 }
 

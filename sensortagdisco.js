@@ -74,6 +74,7 @@ function scanDevice(timeout, callback) {
         ps.stdin.write("scan on\n");
         setTimeout(function() {
             ps.stdin.write("scan off\n");
+            ps.stdin.write("exit\n");
         }, timeout);
     }, (stdout, stderr) => {
         callback(stderr)
