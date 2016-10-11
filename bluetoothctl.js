@@ -1,4 +1,27 @@
+var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
+const bluetoothctlMiniCompatibleVerion = 5.37;
+
+function init(callback) {
+    exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
+        if(error) {
+            callback(stdout, error);
+        }else if(stderr) {
+            callback(stdout, stderr);
+        }
+    });
+    exec("bluetoothctl --version", (error, stdout, stderr) => {
+        if(error) {
+            callback(stdout, error);
+        }else if(stderr) {
+            callback(stdout, stderr);
+        }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+            callback(stdout, "bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+        }else {
+            callback(stdout);
+        }
+    });
+}
 
 function interact(action, callback) {
 	if(!action && !callback) { return; }
@@ -51,6 +74,7 @@ function run(interacts, callback) {
 }
 
 module.exports = {
+    init: init,
 	run: run,
 	interact: interact
 };

@@ -1,8 +1,4 @@
-var exec = require('child_process').exec;
 var bluetoothctl = require("./bluetoothctl.js");
-
-const bluetoothctlMiniCompatibleVerion = 5.37;
-
 
 function eachLine(content, callback) {
     var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
@@ -120,27 +116,18 @@ function scanDevice(timeout, callback) {
 }
 
 (function(timeout) {
+    // Step1. init the bluetoothctl environment
     var initPromise = new Promise((resolve, reject) => {
-        exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
+        bluetoothctl.init((stdout, error) => {
             if(error) {
                 reject(error);
-            }else if(stderr) {
-                reject(stderr);
-            }
-        });
-        exec("bluetoothctl --version", (error, stdout, stderr) => {
-            if(error) {
-                reject(error);
-            }else if(stderr) {
-                reject(stderr);
-            }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-                reject("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            }else {
+            }else{
                 resolve();
             }
         });
     });
     initPromise.catch(handler);
+    // Step2. Scan 5 seconds to look for BLE devices
     var scanPromise = initPromise.then(() => {
         return new Promise((resolve, reject) => {
             scanDevice(timeout || 5000, (error) => {
@@ -153,6 +140,7 @@ function scanDevice(timeout, callback) {
         });
     });
 
+    // Step3. Get BLE devices information and show it out
     scanPromise.then(() => {
         getDevices();
     }).catch(handler);
