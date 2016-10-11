@@ -4,15 +4,16 @@ var spawn = require('child_process').spawn;
 // init bluetoothctl environment
 const bluetoothctlMiniCompatibleVerion = 5.37;
 function init() {
+	var wellEnv = true;
     // unblock the bluetooth
     exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
         if(error) {
             console.error(error);
-            return false;
+            wellEnv = wellEnv && false;
         }
         if(stderr) {
             console.error(stderr);
-            return false;
+            wellEnv = wellEnv && false;
         }
     });
 
@@ -20,18 +21,18 @@ function init() {
     exec("bluetoothctl --version", (error, stdout, stderr) => {
         if(error) {
             console.error(error);
-            return false;
+            wellEnv = wellEnv && false;
         }
         if(stderr) {
             console.error(stderr);
-            return false;
+            wellEnv = wellEnv && false;
         }
         if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
             console.error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            return false;
+            wellEnv = wellEnv && false;
         }
     });
-    return true;
+    return wellEnv;
 }
 
 function interact(action, callback) {
