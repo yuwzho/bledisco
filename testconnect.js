@@ -18,7 +18,15 @@ var bluetoothctl = require("./bluetoothctl.js");
     });
     // Step2. connect to 
     promise.then(() => {
-        bluetoothctl.run(["connect " + mac, "disconnect " + mac], (stdout, error) => {
+        bluetoothctl.interact((ps) => {
+        	// ["connect " + mac, "disconnect " + mac]
+	        ps.stdin.write("power on\n");
+	        ps.stdin.write("connect " + mac + "\n");
+	        setTimeout(() => {
+	            ps.stdin.write("disconnect " + mac + "\n");
+	            ps.stdin.write("exit\n");
+	        }, 1500);
+        }, (stdout, error) => {
         	if(error) {
         		errorHandler(error);
         		return;
@@ -33,7 +41,7 @@ var bluetoothctl = require("./bluetoothctl.js");
     }).catch(errorHandler);
 
     function errorHandler(err) {
-    	console.error(err.message);
+    	console.error(err.message || err);
     	process.exit();
     }
 
