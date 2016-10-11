@@ -38,6 +38,13 @@ function filter(line) {
         return device;
     }
 
+    function isSensorTagBLE(device) {
+        // alias should case sensetive equal to CC2650 SensorTag, and ManufacturerData Key should be 0x0d
+        return device["Alias"].indexOf("SensorTag") >= 0 
+            && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())
+            && device["UUID"].indexOf("0000-1000-8000-00805f9b34fb") >= 0;
+    }
+
     var deviceName = resolveDeviceName(line);
     if(deviceName){
         bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => { 
@@ -46,8 +53,7 @@ function filter(line) {
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
-            // alias should case sensetive equal to CC2650 SensorTag, and ManufacturerData Key should be 0x0d
-            if(device["Alias"] === "CC2650 SensorTag" && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())) {
+            if(isSensorTagBLE(device)) {
                 show(device); 
             }
         });
@@ -65,8 +71,7 @@ function show(device){
         rpad(device["Mac"], 24),
         rpad(device["Name"], 24),
         rpad(device["Connected"], 16),
-        rpad(device["Paired"], 12),
-        rpad(device["UUID"], 44)
+        rpad(device["Paired"], 12)
     );
 }
 
