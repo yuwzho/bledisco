@@ -1,5 +1,10 @@
 var bluetoothctl = require("./bluetoothctl.js");
 
+function errorHandler(err) {
+    console.error(err.message);
+    process.exit();
+}
+
 function eachLine(content, callback) {
     var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
     for (var i = 0; i < lines.length; i++) {
@@ -49,7 +54,7 @@ function filter(line) {
     if(deviceName){
         bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => { 
             if(err) {
-                console.error(err);
+                errorHandler(err);
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
@@ -78,7 +83,7 @@ function show(device){
 function getDevices() {
     bluetoothctl.run(["devices"], (devices, err) => {
         if(err) {
-            console.error(err);
+            errorHandler(err);
             return;
         }
 
@@ -126,7 +131,7 @@ function scanDevice(timeout, callback) {
             }
         });
     });
-    initPromise.catch(handler);
+    initPromise.catch(errorHandler);
     // Step2. Scan 5 seconds to look for BLE devices
     var scanPromise = initPromise.then(() => {
         return new Promise((resolve, reject) => {
@@ -143,9 +148,5 @@ function scanDevice(timeout, callback) {
     // Step3. Get BLE devices information and show it out
     scanPromise.then(() => {
         getDevices();
-    }).catch(handler);
-
-    function handler(err) {
-        console.error(err.message);
-    }
+    }).catch(errorHandler);
 })()
