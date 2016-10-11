@@ -6,33 +6,34 @@ const bluetoothctlMiniCompatibleVerion = 5.37;
 function init() {
 	var wellEnv = true;
     // unblock the bluetooth
-    exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
-        if(error) {
-            console.error(error);
-            wellEnv = wellEnv && false;
-        }
-        if(stderr) {
-            console.error(stderr);
-            wellEnv = wellEnv && false;
-        }
-    });
+    try{
+    	ensureExec("rfkill unblock bluetooth");
+    	ensureExec("bluetoothctl --version", (stdout) => {
+    		if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+            	throw("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+        	}
+    	});
+    }catch(err){
+    	console.error(err);
+    	return false;
+    }
+    return true;
+}
 
-    // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
-    exec("bluetoothctl --version", (error, stdout, stderr) => {
-        if(error) {
-            console.error(error);
-            wellEnv = wellEnv && false;
-        }
-        if(stderr) {
-            console.error(stderr);
-            wellEnv = wellEnv && false;
-        }
-        if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-            console.error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            wellEnv = wellEnv && false;
-        }
-    });
-    return wellEnv;
+function ensureExec(cmd, callback) {
+	if(!cmd) { return; }
+	exec(cmd, (error, stdout, stderr) => {
+		if(error) {
+			throw error;
+		}
+		if(stderr) {
+			throw (stderr);
+		}
+
+		if(stdout && callback) {
+			callback(stdout);
+		}
+	});
 }
 
 function interact(action, callback) {
