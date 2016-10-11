@@ -16,7 +16,7 @@ function filter(line) {
     function resolveDeviceName(line) {
         var reg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})[ ]([^\:]+)$/gm;
         var match = reg.exec(line);
-        if(match) {
+        if (match) {
             return {
                 mac: match[1],
                 name: match[3]
@@ -30,12 +30,12 @@ function filter(line) {
             var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
             var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
             var match = infoReg.exec(line);
-            if(match) {
+            if (match) {
                 device[match[1]] = device[match[1]] || match[2];
                 return;
             }
             match = deviceReg.exec(line);
-            if(match) {
+            if (match) {
                 device["Mac"] = match[1];
                 return;
             }
@@ -45,32 +45,30 @@ function filter(line) {
 
     function isSensorTagBLE(device) {
         // alias should case sensetive equal to CC2650 SensorTag, and ManufacturerData Key should be 0x0d
-        return device["Alias"].indexOf("SensorTag") >= 0 
-            && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())
-            && device["UUID"].indexOf("0000-1000-8000-00805f9b34fb") >= 0;
+        return device["Alias"].indexOf("SensorTag") >= 0 && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase()) && device["UUID"].indexOf("0000-1000-8000-00805f9b34fb") >= 0;
     }
 
     var deviceName = resolveDeviceName(line);
-    if(deviceName){
-        bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => { 
-            if(err) {
+    if (deviceName) {
+        bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => {
+            if (err) {
                 errorHandler(err);
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
-            if(isSensorTagBLE(device)) {
-                show(device); 
+            if (isSensorTagBLE(device)) {
+                show(device);
             }
         });
     }
 }
 
-function show(device){
+function show(device) {
     function rpad(str, size) {
-      if (str.length >= size) {
-        return str;
-      }
-      return str + '                                                                                '.slice(0, size - str.length);
+        if (str.length >= size) {
+            return str;
+        }
+        return str + '                                                                                '.slice(0, size - str.length);
     }
     console.log(
         rpad(device["Mac"], 24),
@@ -82,7 +80,7 @@ function show(device){
 
 function getDevices() {
     bluetoothctl.run(["devices"], (devices, err) => {
-        if(err) {
+        if (err) {
             errorHandler(err);
             return;
         }
@@ -99,24 +97,10 @@ function getDevices() {
             "UUID": "UUID",
             "Paired": "Paired",
             "Trusted": "Trusted",
-            "ManufacturerData Key":"ManufacturerData Key",
+            "ManufacturerData Key": "ManufacturerData Key",
             "ManufacturerData Value": "ManufacturerData Value"
         });
         eachLine(devices, filter);
-    });
-}
-
-// turn on the scan and scan the BLE devices
-function scanDevice(timeout, callback) {
-    bluetoothctl.interact((ps) => {
-        ps.stdin.write("power on\n");
-        ps.stdin.write("scan on\n");
-        setTimeout(() => {
-            ps.stdin.write("scan off\n");
-            ps.stdin.write("exit\n");
-        }, timeout);
-    }, (stdout, stderr) => {
-        callback(stderr)
     });
 }
 
@@ -124,9 +108,9 @@ function scanDevice(timeout, callback) {
     // Step1. init the bluetoothctl environment
     var initPromise = new Promise((resolve, reject) => {
         bluetoothctl.init((stdout, error) => {
-            if(error) {
+            if (error) {
                 reject(error);
-            }else{
+            } else {
                 resolve();
             }
         });
@@ -135,10 +119,10 @@ function scanDevice(timeout, callback) {
     // Step2. Scan 5 seconds to look for BLE devices
     var scanPromise = initPromise.then(() => {
         return new Promise((resolve, reject) => {
-            scanDevice(timeout || 5000, (error) => {
-                if(error) { 
+            bluetoothctl.scan(timeout || 5000, (error) => {
+                if (error) {
                     reject(error);
-                }else {
+                } else {
                     resolve();
                 }
             })
