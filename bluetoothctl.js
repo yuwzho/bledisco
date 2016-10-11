@@ -27,7 +27,7 @@ function init(callback) {
 
 // turn on the scan and scan the BLE devices
 function scanDevice(timeout, callback) {
-    cli.run(name, [{
+    cli(name, [{
         operation: "power on"
     }, {
         operation: "scan on"
@@ -42,7 +42,7 @@ function scanDevice(timeout, callback) {
 }
 
 function getDevices(callback) {
-    cli.run(name, [{
+    cli(name, [{
         operation: "devices"
     }, {
         operation: "exit"
@@ -50,7 +50,7 @@ function getDevices(callback) {
 }
 
 function infoDevice(mac, callback) {
-    cli.run(name, [{
+    cli(name, [{
         operation: "devices"
     }, {
         operation: "exit"
