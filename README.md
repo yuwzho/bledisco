@@ -12,14 +12,14 @@ This lib implements two functions:
     
     **Usage**: 
     ``` bash
-    node sensortagdisco
+    node sensortagdisco.js
     ```
 
     <a id="disco-output-sample"></a>**Output**:
     It will use 10 seconds to discovery bluetooth device arround, and show information for all detected sensortag device.
     ``` bash
-    Mac Address                Device Type        Device Name        Description
-    AA:BB:CC:DD:EE:FF          SensorTag          SensorTag          SensorTag
+    Mac Address                Device Name        		Paired        	Connected
+    AA:BB:CC:DD:EE:FF          CC2650 SensorTag         No 		        No
     ```
 
 * **`testconnect(mac_address)`** - Connect and disconnect to the device. Test the connectivity of this device.
