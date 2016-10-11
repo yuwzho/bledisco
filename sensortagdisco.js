@@ -1,32 +1,4 @@
-var exec = require('child_process').exec;
-var spawn = require('child_process').spawn;
-
-const bluetoothctlMiniCompatibleVerion = 5.37;
-
-function run(cmd, interact, callback) {
-    var ps = spawn(cmd),
-        result = "", err = "";
-    interact = interact || [];
-    for (var i = 0; i < interact.length; i++) {
-        ps.stdin.write(interact[i] + "\n")
-    }
-    setTimeout(function() {
-        ps.stdin.write("exit\n");
-    }, 500);
-    ps.stdout.on("data", (data) => {
-        result += data;
-    });
-    ps.stderr.on("data", (data) => {
-        result += data;
-    });
-    ps.on("close", (code) => {
-        if(err === "") {
-            callback(result);
-        }else{
-            callback(result, err);
-        }        
-    });
-}
+var bluetoothctl = require("./bluetoothctl.js");
 
 function eachLine(content, callback) {
     var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
@@ -72,7 +44,7 @@ function filter(line) {
 
     var deviceName = resolveDeviceName(line);
     if(deviceName){
-        run("bluetoothctl", ["info " + deviceName.mac], (deviceInfo, err) => { 
+        bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => { 
             if(err) {
                 console.error(err);
                 return;
@@ -86,7 +58,7 @@ function filter(line) {
 }
 
 function getDevices() {
-    run("bluetoothctl", ["devices"], (devices, err) => {
+    bluetoothctl.run(["devices"], (devices, err) => {
         if(err) {
             console.error(err);
             return;
@@ -97,60 +69,19 @@ function getDevices() {
 
 // turn on the scan and scan the BLE devices
 function scanDevice(timeout, callback) {
-    var err = "";
-    var bluetoothctl = spawn("bluetoothctl");
-    bluetoothctl.stdin.write("power on\n");
-    bluetoothctl.stdin.write("scan on\n");
-    setTimeout(function() {
-        bluetoothctl.stdin.write("scan off\n");
-        bluetoothctl.stdin.write("exit\n");
-    }, timeout);
-    bluetoothctl.stderr.on("data", (data) => {
-        err += data;
+    bluetoothctl.interact((ps) => {
+        ps.stdin.write("power on\n");
+        ps.stdin.write("scan on\n");
+        setTimeout(function() {
+            ps.stdin.write("scan off\n");
+        }, timeout);
+    }, (stdout, stderr) => {
+        callback(stderr)
     });
-    bluetoothctl.on("close", (code) => {
-        if(error !== ""){
-            callback(err);
-        }else{
-            callback();
-        }
-    });
-}
-
-// unblock the bluetooth and check the bluetoothctl version
-function initEnv() {
-    // unblock the bluetooth
-    exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
-        if(error) {
-            console.error(error);
-            return false;
-        }
-        if(stderr) {
-            console.error(stderr);
-            return false;
-        }
-    });
-
-    // check the bluetoothctl version, should be greater than bluetoothctlMiniCompatibleVerion
-    exec("bluetoothctl --version", (error, stdout, stderr) => {
-        if(error) {
-            console.error(error);
-            return false;
-        }
-        if(stderr) {
-            console.error(stderr);
-            return false;
-        }
-        if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-            console.error("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-            return false;
-        }
-    });
-    return true;
 }
 
 (function(timeout) {
-    if(!initEnv()){ return; }
+    if(!bluetoothctl.init()){ return; }
     scanDevice(timeout || 5000, (error) => {
         if(error) { 
             console.error(error);
