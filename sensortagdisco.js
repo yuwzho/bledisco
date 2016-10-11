@@ -38,8 +38,11 @@ function filter(line) {
         return device;
     }
 
-    function show(device){
-        console.log(JSON.stringify(device));
+    function isSensorTagBLE(device) {
+        // alias should case sensetive equal to CC2650 SensorTag, and ManufacturerData Key should be 0x0d
+        return device["Alias"].indexOf("SensorTag") >= 0 
+            && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())
+            && device["UUID"].indexOf("0000-1000-8000-00805f9b34fb") >= 0;
     }
 
     var deviceName = resolveDeviceName(line);
@@ -50,11 +53,26 @@ function filter(line) {
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
-            if(device["Alias"] === "CC2650 SensorTag" && /^0x[0]*d$/.test(device["ManufacturerData Key"].toLowerCase())) {
+            if(isSensorTagBLE(device)) {
                 show(device); 
             }
         });
     }
+}
+
+function show(device){
+    function rpad(str, size) {
+      if (str.length >= size) {
+        return str;
+      }
+      return str + '                                                                                '.slice(0, size - str.length);
+    }
+    console.log(
+        rpad(device["Mac"], 24),
+        rpad(device["Name"], 24),
+        rpad(device["Connected"], 16),
+        rpad(device["Paired"], 12)
+    );
 }
 
 function getDevices() {
@@ -63,6 +81,21 @@ function getDevices() {
             console.error(err);
             return;
         }
+
+        // show title line first
+        show({
+            "Mac": "Mac Address",
+            "Name": "Device Name",
+            "Alias": "Device Alias",
+            "Blocked": "Blocked",
+            "Connected": "Connected",
+            "LegacyPairing": "LegacyPairing",
+            "UUID": "UUID",
+            "Paired": "Paired",
+            "Trusted": "Trusted",
+            "ManufacturerData Key":"ManufacturerData Key",
+            "ManufacturerData Value": "ManufacturerData Value"
+        });
         eachLine(devices, filter);
     });
 }
