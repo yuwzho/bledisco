@@ -110,7 +110,7 @@ function scanDevice(timeout, callback) {
     bluetoothctl.interact((ps) => {
         ps.stdin.write("power on\n");
         ps.stdin.write("scan on\n");
-        setTimeout(function() {
+        setTimeout(() => {
             ps.stdin.write("scan off\n");
             ps.stdin.write("exit\n");
         }, timeout);
@@ -120,7 +120,7 @@ function scanDevice(timeout, callback) {
 }
 
 (function(timeout) {
-    var initPromise = new Promise(function(resolve, reject) {
+    var initPromise = new Promise((resolve, reject) => {
         exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
             if(error) {
                 reject(error);
@@ -135,6 +135,8 @@ function scanDevice(timeout, callback) {
                 reject(stderr);
             }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
                 reject("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+            }else {
+                resolve();
             }
         });
     });
@@ -144,6 +146,8 @@ function scanDevice(timeout, callback) {
             scanDevice(timeout || 5000, (error) => {
                 if(error) { 
                     reject(error);
+                }else {
+                    resolve();
                 }
             })
         });

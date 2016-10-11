@@ -1,8 +1,6 @@
 var spawn = require('child_process').spawn;
 
 function interact(action, callback) {
-	console.log("============\r\n run bluetoothctl\r\n#######");
-
 	if(!action && !callback) { return; }
 	if(!action) {
 		callback(); 
