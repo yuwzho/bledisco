@@ -20,19 +20,19 @@ var bluetoothctl = require("./bluetoothctl.js");
     promise.then(() => {
         bluetoothctl.run(["connect " + mac, "disconnect " + mac], (stdout, error) => {
         	if(error) {
-        		error(error);
+        		errorHandler(error);
         		return;
         	}
 
         	if(stdout.indexOf("Connection successful") >= 0) {
         		console.log(mac + " can be successfully connected.");
         	}else {
-        		error(mac + " cannot be connected now.");
+        		errorHandler(mac + " cannot be connected now.");
         	}
         });
-    }).catch(error);
+    }).catch(errorHandler);
 
-    function error(err) {
+    function errorHandler(err) {
     	console.error(err.message);
     	process.exit();
     }
