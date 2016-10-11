@@ -1,4 +1,8 @@
+var exec = require('child_process').exec;
 var bluetoothctl = require("./bluetoothctl.js");
+
+const bluetoothctlMiniCompatibleVerion = 5.37;
+
 
 function eachLine(content, callback) {
     var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
@@ -82,7 +86,8 @@ function getDevices() {
             return;
         }
 
-        // show title line first
+        // show title line
+        // add all information into the title part, let show() to choose which to show up.
         show({
             "Mac": "Mac Address",
             "Name": "Device Name",
@@ -115,14 +120,40 @@ function scanDevice(timeout, callback) {
 }
 
 (function(timeout) {
-    if(!bluetoothctl.init()){ return; }
-    scanDevice(timeout || 5000, (error) => {
-        if(error) { 
-            console.error(error);
-            return;
-        }
-        setTimeout(function() {
-            getDevices();
-        }, 1000);
+    var initPromise = new Promise(function(resolve, reject) {
+        exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
+            if(error) {
+                reject(error);
+            }else if(stderr) {
+                reject(stderr);
+            }
+        });
+        exec("bluetoothctl --version", (error, stdout, stderr) => {
+            if(error) {
+                reject(error);
+            }else if(stderr) {
+                reject(stderr);
+            }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+                reject("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+            }
+        });
     });
+    initPromise.catch(handler);
+    var scanPromise = initPromise.then(() => {
+        return new Promise((resolve, reject) => {
+            scanDevice(timeout || 5000, (error) => {
+                if(error) { 
+                    reject(error);
+                }
+            })
+        });
+    });
+
+    scanPromise.then(() => {
+        getDevices();
+    }).catch(handler);
+
+    function handler(err) {
+        console.error(err.message);
+    }
 })()
