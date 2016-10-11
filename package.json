@@ -2,7 +2,7 @@
   "name": "bledisco",
   "version": "1.0.0",
   "description": "descovery bluetooth device and show the mac address",
-  "main": "getMac.js",
+  "main": "sensortagdisco.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

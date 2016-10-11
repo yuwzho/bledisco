@@ -1,39 +1,26 @@
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
-
-// init bluetoothctl environment
 const bluetoothctlMiniCompatibleVerion = 5.37;
-function init() {
-	var wellEnv = true;
-    // unblock the bluetooth
-    try{
-    	ensureExec("rfkill unblock bluetooth");
-    	ensureExec("bluetoothctl --version", (stdout) => {
-    		if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
-            	throw("bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-        	}
-    	});
-    }catch(err){
-    	console.error(err);
-    	return false;
-    }
-    return true;
-}
 
-function ensureExec(cmd, callback) {
-	if(!cmd) { return; }
-	exec(cmd, (error, stdout, stderr) => {
-		if(error) {
-			throw error;
-		}
-		if(stderr) {
-			throw (stderr);
-		}
-
-		if(stdout && callback) {
-			callback(stdout);
-		}
-	});
+function init(callback) {
+    exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
+        if(error) {
+            callback(stdout, error);
+        }else if(stderr) {
+            callback(stdout, stderr);
+        }
+    });
+    exec("bluetoothctl --version", (error, stdout, stderr) => {
+        if(error) {
+            callback(stdout, error);
+        }else if(stderr) {
+            callback(stdout, stderr);
+        }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+            callback(stdout, "bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
+        }else {
+            callback(stdout);
+        }
+    });
 }
 
 function interact(action, callback) {
@@ -45,16 +32,24 @@ function interact(action, callback) {
 
 	var ps = spawn("bluetoothctl"),
         result = "", err = "";
-    action(ps);
+	try{
+		action(ps);
+	}catch(e) {
+		console.error("Error occurs when incteracting with bluetoothctl: " + e.message);
+	}
 
     // get all stdout and stderr output
     ps.stdout.on("data", (data) => {
         result += data;
     });
     ps.stderr.on("data", (data) => {
-        result += data;
+        err += data;
     });
 
+	ps.on("error", (error) => {
+		if(!callback) { return; }
+		callback(result, error);
+	});
     // callback when finish child process
     ps.on("close", (code) => {
     	if(!callback) { return; }
@@ -79,7 +74,7 @@ function run(interacts, callback) {
 }
 
 module.exports = {
+    init: init,
 	run: run,
-	interact: interact,
-	init: init
+	interact: interact
 };

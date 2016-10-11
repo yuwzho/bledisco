@@ -82,7 +82,8 @@ function getDevices() {
             return;
         }
 
-        // show title line first
+        // show title line
+        // add all information into the title part, let show() to choose which to show up.
         show({
             "Mac": "Mac Address",
             "Name": "Device Name",
@@ -105,7 +106,7 @@ function scanDevice(timeout, callback) {
     bluetoothctl.interact((ps) => {
         ps.stdin.write("power on\n");
         ps.stdin.write("scan on\n");
-        setTimeout(function() {
+        setTimeout(() => {
             ps.stdin.write("scan off\n");
             ps.stdin.write("exit\n");
         }, timeout);
@@ -115,14 +116,36 @@ function scanDevice(timeout, callback) {
 }
 
 (function(timeout) {
-    if(!bluetoothctl.init()){ return; }
-    scanDevice(timeout || 5000, (error) => {
-        if(error) { 
-            console.error(error);
-            return;
-        }
-        setTimeout(function() {
-            getDevices();
-        }, 1000);
+    // Step1. init the bluetoothctl environment
+    var initPromise = new Promise((resolve, reject) => {
+        bluetoothctl.init((stdout, error) => {
+            if(error) {
+                reject(error);
+            }else{
+                resolve();
+            }
+        });
     });
+    initPromise.catch(handler);
+    // Step2. Scan 5 seconds to look for BLE devices
+    var scanPromise = initPromise.then(() => {
+        return new Promise((resolve, reject) => {
+            scanDevice(timeout || 5000, (error) => {
+                if(error) { 
+                    reject(error);
+                }else {
+                    resolve();
+                }
+            })
+        });
+    });
+
+    // Step3. Get BLE devices information and show it out
+    scanPromise.then(() => {
+        getDevices();
+    }).catch(handler);
+
+    function handler(err) {
+        console.error(err.message);
+    }
 })()
