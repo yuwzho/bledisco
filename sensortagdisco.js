@@ -26,7 +26,7 @@ function filter(line) {
             var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
             var match = infoReg.exec(line);
             if(match) {
-                device[match[1]] = match[2];
+                device[match[1]] = device[match[1]] || match[2];
                 return;
             }
             match = deviceReg.exec(line);
