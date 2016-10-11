@@ -50,7 +50,7 @@ function filter(line) {
 
     var deviceName = resolveDeviceName(line);
     if (deviceName) {
-        bluetoothctl.run(["info " + deviceName.mac], (deviceInfo, err) => {
+        bluetoothctl.info(deviceName.mac, (deviceInfo, err) => {
             if (err) {
                 errorHandler(err);
                 return;
@@ -79,7 +79,7 @@ function show(device) {
 }
 
 function getDevices() {
-    bluetoothctl.run(["devices"], (devices, err) => {
+    bluetoothctl.devices((devices, err) => {
         if (err) {
             errorHandler(err);
             return;
