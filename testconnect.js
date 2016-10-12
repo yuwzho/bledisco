@@ -19,41 +19,47 @@ var util = require("./util.js");
         });
     });
 
+    // Step2. try to connect the device
     initPromise.catch(util.errorHandler);
     var connectPromise = initPromise.then(() => {
         return new Promise((resolve, reject) => {
             connect(mac, util.errorHandler, (isConnected) => {
-                if(isConnected) {
+                if (isConnected) {
                     resolve(mac);
-                }else{
+                } else {
                     reject(mac);
                 }
             });
         });
     });
-    connectPromise.then(connectSuccess);
-    var scanPromise = connectPromise.catch(() => {
-        return new Promise((resolve, reject) => {
-            bluetoothctl.scan(3000, (error) => {
-                if(error){
-                    reject(error);
-                }else{
-                    resolve();
-                }
-            });
-        });
+
+    // if success, exit
+    connectPromise.then(connectSuccess).then(() => {
+        process.exit();
     });
 
-    scanPromise.catch(util.errorHandler);
-    scanPromise.then(() => {
-        connect(mac, util.errorHandler, (isConnected) => {
-            if(isConnected){
-                connectSuccess(mac);
-            }else{
-                connectFail(mac);
-            }
+    // if failed, scan 3 seconds and retry.
+    connectPromise.catch(() => {
+            return new Promise((resolve, reject) => {
+                bluetoothctl.scan(3000, (error) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
         })
-    });
+        .then(() => {
+            connect(mac, util.errorHandler, (isConnected) => {
+                if (isConnected) {
+                    connectSuccess(mac);
+                } else {
+                    connectFail(mac);
+                }
+            })
+        })
+        .catch(util.errorHandler)
 })(process.argv[2]);
 
 function connectFail(mac) {
