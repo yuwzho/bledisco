@@ -9,7 +9,7 @@ var util = require("./util.js");
     }
 
     // Step1. init the bluetoothctl
-    var initPromise = new Promise((resolve, reject) => {
+    var promise = new Promise((resolve, reject) => {
         bluetoothctl.init((stdout, error) => {
             if (error) {
                 reject(error);
@@ -20,10 +20,9 @@ var util = require("./util.js");
     });
 
     // Step2. connect the device
-    initPromise.catch(util.errorHandler);
-    var connectPromise = initPromise.then(() => {
-        return connect(mac, util.errorHandler, () => {
-            return new Promise((resolve, reject) => {
+    promise.then(() => {
+        connect(mac, util.errorHandler, () => {
+            new Promise((resolve, reject) => {
                 // if failed, scan again
                 bluetoothctl.scan(3000, (stderr) => {
                     if (stderr) {
@@ -32,15 +31,13 @@ var util = require("./util.js");
                         resolve();
                     }
                 });
-            });
+            }).then(() => {
+                connect(mac, util.errorHandler, () => {
+                    util.errorHandler(mac + " cannot be connected now.")
+                })
+            }).catch(util.errorHandler);
         });
-    });
-
-    // Step3. final test can be connected
-    connectPromise.catch(util.errorHandler);
-    connectPromise.then(() => {
-        connect(mac, util.errorHandler, util.errorHandler(mac + " cannot be connected now."));
-    });
+    }).catch(util.errorHandler);
 })(process.argv[2]);
 
 function connect(mac, errorCallback, failCallback) {
@@ -51,13 +48,10 @@ function connect(mac, errorCallback, failCallback) {
     bluetoothctl.connect(mac, (stdout, error) => {
         if (error) {
             errorCallback(error);
-            return;
-        }
-
-        if (isConnected(stdout)) {
+        } else if (isConnected(stdout)) {
             console.log(mac + " can be successfully connected.");
         } else {
-            return failCallback();
+            failCallback();
         }
     });
 }
