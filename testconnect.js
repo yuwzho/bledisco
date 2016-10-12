@@ -1,4 +1,6 @@
 var bluetoothctl = require("./bluetoothctl.js");
+var util = require("./util.js");
+
 (function(mac) {
     // check whether the mac address is the correct one
     if (!valid(mac)) {
@@ -16,40 +18,48 @@ var bluetoothctl = require("./bluetoothctl.js");
             }
         });
     });
-    // Step2. connect to 
+
+    // Step2. connect the device
     promise.then(() => {
-        bluetoothctl.interact((ps) => {
-            // ["connect " + mac, "disconnect " + mac]
-            ps.stdin.write("power on\n");
-            ps.stdin.write("connect " + mac + "\n");
-            setTimeout(() => {
-                ps.stdin.write("disconnect " + mac + "\n");
-                ps.stdin.write("exit\n");
-            }, 1500);
-        }, (stdout, error) => {
-            if (error) {
-                errorHandler(error);
-                return;
-            }
-
-            if (stdout.indexOf("Connection successful") >= 0) {
-                console.log(mac + " can be successfully connected.");
-            } else {
-                errorHandler(mac + " cannot be connected now.");
-            }
+        connect(mac, util.errorHandler, () => {
+            new Promise((resolve, reject) => {
+                // if failed, scan again
+                bluetoothctl.scan(3000, (stderr) => {
+                    if (stderr) {
+                        reject(stderr);
+                    } else {
+                        resolve();
+                    }
+                });
+            }).then(() => {
+                connect(mac, util.errorHandler, () => {
+                    util.errorHandler(mac + " cannot be connected now.")
+                })
+            }).catch(util.errorHandler);
         });
-    }).catch(errorHandler);
-
-    function errorHandler(err) {
-        console.error(err.message || err);
-        process.exit();
-    }
-
-    function valid(mac) {
-        return /^([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2}$/.test(mac);
-    }
-
-    function usage() {
-        console.log("usage: node testconnect.js <mac address>")
-    }
+    }).catch(util.errorHandler);
 })(process.argv[2]);
+
+function connect(mac, errorCallback, failCallback) {
+    function isConnected(message) {
+        return message.indexOf("Connection successful") >= 0;
+    }
+
+    bluetoothctl.connect(mac, (stdout, error) => {
+        if (error) {
+            errorCallback(error);
+        } else if (isConnected(stdout)) {
+            console.log(mac + " can be successfully connected.");
+        } else {
+            failCallback();
+        }
+    });
+}
+
+function valid(mac) {
+    return /^([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2}$/.test(mac);
+}
+
+function usage() {
+    console.log("usage: node testconnect.js <mac address>")
+}

@@ -60,9 +60,24 @@ function infoDevice(mac, callback) {
     }], callback);
 }
 
+function connectDevice(mac, callback) {
+    cli(name, [{
+        operation: "power on"
+    }, {
+        operation: "connect " + mac
+    }, {
+        operation: "disconnect " + mac,
+        timeout: 1500
+    }, {
+        operation: "exit",
+        timeout: 500
+    }], callback);
+}
+
 module.exports = {
     init: init,
     scan: scanDevice,
     devices: getDevices,
-    info: infoDevice
+    info: infoDevice,
+    connect: connectDevice
 };
