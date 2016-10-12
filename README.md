@@ -1,6 +1,6 @@
 ---
 Author: yuwzho
-Date: 2016/09/26
+Date: 2016/10/12
 ---
 
 # bledisco - bluetooth device discovery
@@ -47,7 +47,7 @@ It should contains the following steps:
 1. Init BLE environment - Unblock bluetooth and check bluetootchctl version
 2. Scan on the BLE device - Use the bluetootchctl process on linux to scan BLE device
 3. Find all devices - Use bluetootchctl to list all avaliable bluetootch devices
-4. Get information for each device - There is a filter to determine whether the device is a sensortag device, if so, show this device as [sample output](#output-sample) shows.
+4. Get information for each device - There is a filter to determine whether the device is a sensortag device, if so, show this device as [sample output](#disco-output-sample) shows.
 
 ### `testconnect.js`
 
