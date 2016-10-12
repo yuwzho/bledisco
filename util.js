@@ -1,12 +1,13 @@
 function rpad(str, size) {
+	str = str + "";
 	if (str.length >= size) {
 		return str;
 	}
-	return str + '                                                                                '.slice(0, size - str.length);
+	return str + "                                                                                ".slice(0, size - str.length);
 }
 
 function errorHandler(err) {
-	console.error(err.message);
+	console.error(err.message || err);
 	process.exit();
 }
 
