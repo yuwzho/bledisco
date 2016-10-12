@@ -1,80 +1,68 @@
-var exec = require('child_process').exec;
-var spawn = require('child_process').spawn;
+var exec = require("child_process").exec;
+var cli = require("./interactcli.js");
+
+const name = "bluetoothctl";
 const bluetoothctlMiniCompatibleVerion = 5.37;
 
 function init(callback) {
     exec("rfkill unblock bluetooth", (error, stdout, stderr) => {
-        if(error) {
+        if (error) {
             callback(stdout, error);
-        }else if(stderr) {
+        } else if (stderr) {
             callback(stdout, stderr);
         }
     });
     exec("bluetoothctl --version", (error, stdout, stderr) => {
-        if(error) {
+        if (error) {
             callback(stdout, error);
-        }else if(stderr) {
+        } else if (stderr) {
             callback(stdout, stderr);
-        }else if(parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
+        } else if (parseFloat(stdout) < bluetoothctlMiniCompatibleVerion) {
             callback(stdout, "bluetoothctl version should be greater than " + bluetoothctlMiniCompatibleVerion + ", current version is " + stdout);
-        }else {
+        } else {
             callback(stdout);
         }
     });
 }
 
-function interact(action, callback) {
-	if(!action && !callback) { return; }
-	if(!action) {
-		callback(); 
-		return;
-	}
-
-	var ps = spawn("bluetoothctl"),
-        result = "", err = "";
-	try{
-		action(ps);
-	}catch(e) {
-		console.error("Error occurs when incteracting with bluetoothctl: " + e.message);
-	}
-
-    // get all stdout and stderr output
-    ps.stdout.on("data", (data) => {
-        result += data;
-    });
-    ps.stderr.on("data", (data) => {
-        err += data;
-    });
-
-	ps.on("error", (error) => {
-		if(!callback) { return; }
-		callback(result, error);
-	});
-    // callback when finish child process
-    ps.on("close", (code) => {
-    	if(!callback) { return; }
-        if(err === "") {
-            callback(result);
-        }else{
-            callback(result, err);
-        }        
+// turn on the scan and scan the BLE devices
+function scanDevice(timeout, callback) {
+    cli(name, [{
+        operation: "power on"
+    }, {
+        operation: "scan on"
+    }, {
+        operation: "scan off",
+        timeout: timeout
+    }, {
+        operation: "exit",
+        timeout: 500
+    }], (stdout, stderr) => {
+        callback(stderr)
     });
 }
 
-function run(interacts, callback) {
-	interact((ps) => {
-		interacts = interacts || [];
-	    for (var i = 0; i < interacts.length; i++) {
-	        ps.stdin.write(interacts[i] + "\n");
-	    }
-	    setTimeout(function() {
-        	ps.stdin.write("exit\n");
-    	}, 500);
-	}, callback);
+function getDevices(callback) {
+    cli(name, [{
+        operation: "devices"
+    }, {
+        operation: "exit",
+        timeout: 500
+    }], callback);
+}
+
+function infoDevice(mac, callback) {
+    cli(name, [{
+        operation: "info " + mac
+    }, {
+        operation: "exit",
+        timeout: 500
+    }], callback);
 }
 
 module.exports = {
     init: init,
-	run: run,
-	interact: interact
+    scan: scanDevice,
+    devices: getDevices,
+    info: infoDevice
 };
