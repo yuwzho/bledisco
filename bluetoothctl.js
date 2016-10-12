@@ -53,7 +53,7 @@ function getDevices(callback) {
 
 function infoDevice(mac, callback) {
     cli(name, [{
-        operation: "devices"
+        operation: "info " + mac
     }, {
         operation: "exit",
         timeout: 500
