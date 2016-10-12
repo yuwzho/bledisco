@@ -9,16 +9,17 @@ function run(name, cmds, callback) {
 		operation: "exit",
 		timeout: 500
 	}];
-	var promise = new Promise((resolve, reject) => {resolve();});
+	var promise = new Promise((resolve, reject) => {
+		resolve();
+	});
 	cmds.forEach((cmd) => {
 		promise = promise.then(() => {
 			return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    console.log(cmd.operation + "  " + (cmd.timeout || 0) + "\n");
-                    ps.stdin.write(cmd.operation + "\n");
-                    resolve();
-                }, cmd.timeout || 0);
-            });
+				setTimeout(() => {
+					ps.stdin.write(cmd.operation + "\n");
+					resolve();
+				}, cmd.timeout || 0);
+			});
 		});
 	});
 	promise.then(() => {});
