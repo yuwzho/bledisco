@@ -36,6 +36,7 @@ var util = require("./util.js");
         });
     });
 
+    // Step3. final test can be connected
     connectPromise.catch(util.errorHandler);
     connectPromise.then(() => {
         connect(mac, util.errorHandler, util.errorHandler(mac + " cannot be connected now."));
@@ -43,6 +44,10 @@ var util = require("./util.js");
 })(process.argv[2]);
 
 function connect(mac, errorCallback, failCallback) {
+    function isConnected(message) {
+        return message.indexOf("Connection successful") >= 0;
+    }
+
     bluetoothctl.connect(mac, (stdout, error) => {
         if (error) {
             errorCallback(error);
@@ -57,10 +62,9 @@ function connect(mac, errorCallback, failCallback) {
     });
 }
 
-function valid(mac) { 
-         return /^([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2}$/.test(mac); 
-     } 
-
+function valid(mac) {
+    return /^([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2}$/.test(mac);
+}
 
 function usage() {
     console.log("usage: node testconnect.js <mac address>")
