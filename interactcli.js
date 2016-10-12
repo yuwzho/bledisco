@@ -6,9 +6,12 @@ function run(name, cmds, callback) {
 		err = "";
 
 	cmds = cmds || [{
-		operation: "exit"
+		operation: "exit",
+		timeout: 500
 	}];
-	var promise = Promise.resolve();
+	var promise = new Promise((resolve, reject) => {
+		resolve();
+	});
 	for (var i = 0; i < cmds.length; i++) {
 		var cmd = cmds[i];
 		promise = promise.then(() => {

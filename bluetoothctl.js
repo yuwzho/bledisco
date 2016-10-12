@@ -35,7 +35,8 @@ function scanDevice(timeout, callback) {
         operation: "scan off",
         timeout: timeout
     }, {
-        operation: "exit"
+        operation: "exit",
+        timeout: 500
     }], (stdout, stderr) => {
         callback(stderr)
     });
@@ -45,7 +46,8 @@ function getDevices(callback) {
     cli(name, [{
         operation: "devices"
     }, {
-        operation: "exit"
+        operation: "exit",
+        timeout: 500
     }], callback);
 }
 
@@ -53,7 +55,8 @@ function infoDevice(mac, callback) {
     cli(name, [{
         operation: "devices"
     }, {
-        operation: "exit"
+        operation: "exit",
+        timeout: 500
     }], callback);
 }
 

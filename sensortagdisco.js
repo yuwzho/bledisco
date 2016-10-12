@@ -1,16 +1,5 @@
 var bluetoothctl = require("./bluetoothctl.js");
-
-function errorHandler(err) {
-    console.error(err.message);
-    process.exit();
-}
-
-function eachLine(content, callback) {
-    var lines = ("" + content).replace(/\r\n/g, "\n").split("\n");
-    for (var i = 0; i < lines.length; i++) {
-        callback(lines[i]);
-    }
-}
+var util = require("./util.js");
 
 function filter(line) {
     function resolveDeviceName(line) {
@@ -26,7 +15,7 @@ function filter(line) {
 
     function resolveDeviceInfo(content) {
         var device = {};
-        eachLine(content, (line) => {
+        util.eachLine(content, (line) => {
             var deviceReg = /^Device[ ](([0-9A-Fa-f]{2}\:){5}[0-9A-Fa-f]{2})$/gm;
             var infoReg = /^\s+(.+)?:[ ](.+)$/gm;
             var match = infoReg.exec(line);
@@ -52,7 +41,7 @@ function filter(line) {
     if (deviceName) {
         bluetoothctl.info(deviceName.mac, (deviceInfo, err) => {
             if (err) {
-                errorHandler(err);
+                util.errorHandler(err);
                 return;
             }
             var device = resolveDeviceInfo(deviceInfo);
@@ -64,24 +53,18 @@ function filter(line) {
 }
 
 function show(device) {
-    function rpad(str, size) {
-        if (str.length >= size) {
-            return str;
-        }
-        return str + '                                                                                '.slice(0, size - str.length);
-    }
     console.log(
-        rpad(device["Mac"], 24),
-        rpad(device["Name"], 24),
-        rpad(device["Connected"], 16),
-        rpad(device["Paired"], 12)
+        util.rpad(device["Mac"], 24),
+        util.rpad(device["Name"], 24),
+        util.rpad(device["Connected"], 16),
+        util.rpad(device["Paired"], 12)
     );
 }
 
 function getDevices() {
     bluetoothctl.devices((devices, err) => {
         if (err) {
-            errorHandler(err);
+            util.errorHandler(err);
             return;
         }
 
@@ -100,11 +83,12 @@ function getDevices() {
             "ManufacturerData Key": "ManufacturerData Key",
             "ManufacturerData Value": "ManufacturerData Value"
         });
-        eachLine(devices, filter);
+        util.eachLine(devices, filter);
     });
 }
 
 (function(timeout) {
+    timeout = timeout || 5000;
     // Step1. init the bluetoothctl environment
     var initPromise = new Promise((resolve, reject) => {
         bluetoothctl.init((stdout, error) => {
@@ -115,11 +99,11 @@ function getDevices() {
             }
         });
     });
-    initPromise.catch(errorHandler);
+    initPromise.catch(util.errorHandler);
     // Step2. Scan 5 seconds to look for BLE devices
     var scanPromise = initPromise.then(() => {
         return new Promise((resolve, reject) => {
-            bluetoothctl.scan(timeout || 5000, (error) => {
+            bluetoothctl.scan(timeout, (error) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -132,5 +116,5 @@ function getDevices() {
     // Step3. Get BLE devices information and show it out
     scanPromise.then(() => {
         getDevices();
-    }).catch(errorHandler);
-})()
+    }).catch(util.errorHandler);
+})(process.argv[2]);
