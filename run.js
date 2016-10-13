@@ -1,24 +1,43 @@
+var spawn = require("child_process").spawn;
+var fs = require("fs");
 var util = require("./lib/util.js");
 var bleConfig = require("./lib/bleconfig.js");
 
 function run(configPath) {
-	console.log("run start");
-	setTimeout(function() {
-		console.log("run finish");
-	}, 10000);
+	// change to directory
+	process.chdir(bleConfig.samplePath);
+	// run sample
+	var ps = spawn("./" + bleConfig.sampleBinary + " " + configPath);
+	ps.stdout.on("data", (data) => {
+		console.log("" + data);
+	})
+	ps.stderr.on("data", util.errorHandler);
+	ps.on("error", util.errorHandler);
 }
 
 (function() {
-	// Step1. deploy device
-	var promise = new Promise((resolve, reject) => {
-		bleConfig.create(true, (stdout, error) => {
-			if (error) {
-				reject(error);
-			} else {
-				resolve(stdout);
-			}
-		});
-	});
-	// Step2. run sample
-	promise.then(run).catch(util.errorHandler);
+	// Step1. check binary exist
+	new Promise((resolve, reject) => {
+			// check exits
+			var binaryPath = bleConfig.samplePath + bleConfig.sampleBinary;
+			fs.exists(binaryPath, (exists) => {
+				if (!exists) {
+					reject(binaryPath + " not found");
+				} else {
+					resolve();
+				}
+			});
+		})
+		// Step2. deploy device
+		.then(() => {
+			bleConfig.create(true, (stdout, error) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve(stdout);
+				}
+			});
+		})
+		// Step3. run sample
+		.then(run).catch(util.errorHandler);
 })();
