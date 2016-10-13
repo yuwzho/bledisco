@@ -1,5 +1,5 @@
-var bluetoothctl = require("./bluetoothctl.js");
-var util = require("./util.js");
+var bluetoothctl = require("./lib/bluetoothctl.js");
+var util = require("./lib/util.js");
 
 function filter(line) {
     function resolveDeviceName(line) {

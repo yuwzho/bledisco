@@ -1,5 +1,5 @@
-var bluetoothctl = require("./bluetoothctl.js");
-var util = require("./util.js");
+var bluetoothctl = require("./lib/bluetoothctl.js");
+var util = require("./lib/util.js");
 
 (function(mac) {
     // check whether the mac address is the correct one
@@ -9,7 +9,7 @@ var util = require("./util.js");
     }
 
     // Step1. init the bluetoothctl
-    var promise = new Promise((resolve, reject) => {
+    var initPromise = new Promise((resolve, reject) => {
         bluetoothctl.init((stdout, error) => {
             if (error) {
                 reject(error);
@@ -19,28 +19,58 @@ var util = require("./util.js");
         });
     });
 
-    // Step2. connect the device
-    promise.then(() => {
-        connect(mac, util.errorHandler, () => {
-            new Promise((resolve, reject) => {
-                // if failed, scan again
-                bluetoothctl.scan(3000, (stderr) => {
-                    if (stderr) {
-                        reject(stderr);
+    // Step2. try to connect the device
+    initPromise.catch(util.errorHandler);
+    var connectPromise = initPromise.then(() => {
+        return new Promise((resolve, reject) => {
+            connect(mac, util.errorHandler, (isConnected) => {
+                if (isConnected) {
+                    resolve(mac);
+                } else {
+                    reject(mac);
+                }
+            });
+        });
+    });
+
+    // if success, exit
+    connectPromise.then(connectSuccess).then(() => {
+        process.exit();
+    });
+
+    // if failed, scan 3 seconds and retry.
+    connectPromise.catch(() => {
+            return new Promise((resolve, reject) => {
+                bluetoothctl.scan(3000, (error) => {
+                    if (error) {
+                        reject(error);
                     } else {
                         resolve();
                     }
                 });
-            }).then(() => {
-                connect(mac, util.errorHandler, () => {
-                    util.errorHandler(mac + " cannot be connected now.")
-                })
-            }).catch(util.errorHandler);
-        });
-    }).catch(util.errorHandler);
+            });
+        })
+        .then(() => {
+            connect(mac, util.errorHandler, (isConnected) => {
+                if (isConnected) {
+                    connectSuccess(mac);
+                } else {
+                    connectFail(mac);
+                }
+            })
+        })
+        .catch(util.errorHandler)
 })(process.argv[2]);
 
-function connect(mac, errorCallback, failCallback) {
+function connectFail(mac) {
+    console.log(mac + " cannot be connected now.");
+}
+
+function connectSuccess(mac) {
+    console.log(mac + " can be successfully connected.");
+}
+
+function connect(mac, errorCallback, callback) {
     function isConnected(message) {
         return message.indexOf("Connection successful") >= 0;
     }
@@ -49,9 +79,9 @@ function connect(mac, errorCallback, failCallback) {
         if (error) {
             errorCallback(error);
         } else if (isConnected(stdout)) {
-            console.log(mac + " can be successfully connected.");
+            callback(true);
         } else {
-            failCallback();
+            callback(false);
         }
     });
 }
