@@ -7,7 +7,7 @@ function run(configPath) {
 	// change to directory
 	process.chdir(bleConfig.samplePath);
 	// run sample
-	var ps = spawn("./" + bleConfig.sampleBinary + " " + configPath);
+	var ps = spawn(bleConfig.sampleBinary + " " + configPath);
 	ps.stdout.on("data", (data) => {
 		console.log("" + data);
 	})
@@ -30,12 +30,14 @@ function run(configPath) {
 		})
 		// Step2. deploy device
 		.then(() => {
-			bleConfig.create(true, (stdout, error) => {
-				if (error) {
-					reject(error);
-				} else {
-					resolve(stdout);
-				}
+			return new Promise((resolve, reject) => {
+				bleConfig.create(true, (stdout, error) => {
+					if (error) {
+						reject(error);
+					} else {
+						resolve(stdout);
+					}
+				})
 			});
 		})
 		// Step3. run sample
