@@ -32,6 +32,6 @@ function parseArgv(argv) {
 		}
 
 		console.log("ble_gateway_hl successfully created. To run the sample, use following command:");
-		console.log("'cd " + bleConfig.samplePath + "; ./" + bleConfig.sampleBinary + " " + bleConfig.sampleConfig + "'");
+		console.log("'cd " + bleConfig.samplePath + "; ./" + bleConfig.sampleBinary + " " + stdout + "'");
 	});
 })(process.argv[2]);
