@@ -1,7 +1,11 @@
 {
   "IoTHubName": "<Your IoTHubName>",
   "IoTHubSuffix": "<Your IoTHubSuffix>",
-  "IoTDeviceId": "<Your Device Id>",
-  "IoTDeviceKey": "<Your Device Key>",
-  "BLEMacAddress": "<You BLE mac Address>"
+  "devices": [
+    {
+      "IoTDeviceId": "<Your Device Id>",
+      "IoTDeviceKey": "<Your Device Key>",
+      "BLEMacAddress": "<You BLE mac Address>"
+    }
+  ]
 }
