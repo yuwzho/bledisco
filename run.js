@@ -10,9 +10,15 @@ function run(configPath) {
 	var ps = spawn("./" + bleConfig.sampleBinary, [configPath]);
 	// re-direct the Ctrl-C to this process
 	process.on("SIGINT", ps.kill);
-	ps.stdout.on("data", console.log);
-	ps.stderr.on("data", util.errorHandler);
-	ps.on("error", util.errorHandler);
+	ps.stdout.on("data", (data) => {
+		console.log(`${data}`);
+	});
+	ps.stderr.on("data", (data) => {
+		util.errorHandler(`${data}`)
+	});
+	ps.on("error", (data) => {
+		util.errorHandler(`${data}`)
+	});
 }
 
 (function() {
