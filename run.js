@@ -7,10 +7,10 @@ function run(configPath) {
 	// change to directory
 	process.chdir(bleConfig.samplePath);
 	// run sample
-	var ps = spawn(bleConfig.sampleBinary + " " + configPath);
-	ps.stdout.on("data", (data) => {
-		console.log("" + data);
-	})
+	var ps = spawn("./" + bleConfig.sampleBinary, [configPath]);
+	// re-direct the Ctrl-C to this process
+	process.on("SIGINT", ps.kill);
+	ps.stdout.on("data", console.log);
 	ps.stderr.on("data", util.errorHandler);
 	ps.on("error", util.errorHandler);
 }
