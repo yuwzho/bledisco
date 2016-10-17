@@ -7,18 +7,9 @@ function run(configPath) {
 	// change to directory
 	process.chdir(bleConfig.samplePath);
 	// run sample
-	var ps = spawn("./" + bleConfig.sampleBinary, [configPath]);
+	var ps = spawn("./" + bleConfig.sampleBinary, [configPath], { stdio: 'inherit' });
 	// re-direct the Ctrl-C to this process
 	process.on("SIGINT", ps.kill);
-	ps.stdout.on("data", (data) => {
-		console.log(`${data}`);
-	});
-	ps.stderr.on("data", (data) => {
-		util.errorHandler(`${data}`)
-	});
-	ps.on("error", (data) => {
-		util.errorHandler(`${data}`)
-	});
 }
 
 (function() {
