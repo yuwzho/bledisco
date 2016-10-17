@@ -37,7 +37,7 @@ function run(configPath) {
 		// Step2. deploy device
 		.then(() => {
 			return new Promise((resolve, reject) => {
-				bleConfig.create(true, (stdout, error) => {
+				bleConfig.create({}, (stdout, error) => {
 					if (error) {
 						reject(error);
 					} else {
