@@ -2,6 +2,8 @@ var bluetoothctl = require("./lib/bluetoothctl.js");
 var util = require("./lib/util.js");
 
 (function(mac) {
+    // the bluetootchctl can only support upper case
+    mac = (mac + "").toUpperCase();
     // check whether the mac address is the correct one
     if (!valid(mac)) {
         usage();
