@@ -1,5 +1,13 @@
+# VS
+.settings/
+.vs/
 .vscode/
 
-# ble_gateway.json
+# reserved config
 ble_gateway.json
 .ble_gateway.json
+config.json
+
+# Linux
+.*~
+*~
