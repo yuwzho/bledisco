@@ -89,36 +89,41 @@ function getDevices() {
     });
 }
 
-(function(timeout) {
-    timeout = timeout || 5000;
-    // Step1. init the bluetoothctl environment
-    var initPromise = new Promise((resolve, reject) => {
-        bluetoothctl.init((stdout, error) => {
+function scanPromiseCreator(timeout) {
+    return new Promise((resolve, reject) => {
+        bluetoothctl.scan(timeout, (error) => {
             if (error) {
                 reject(error);
             } else {
                 resolve();
             }
-        });
+        })
     });
-    initPromise.catch(util.errorHandler);
-    // Step2. Scan 5 seconds to look for BLE devices
-    var scanPromise = initPromise.then(() => {
-        return new Promise((resolve, reject) => {
-            bluetoothctl.scan(timeout, (error) => {
+}
+
+(function(timeout) {
+    timeout = timeout || 5000;
+    // Step1. init the bluetoothctl environment
+    var initPromise = new Promise((resolve, reject) => {
+            bluetoothctl.init((stdout, error) => {
                 if (error) {
                     reject(error);
                 } else {
                     resolve();
                 }
-            })
-        });
-    });
-
-    // Step3. Get BLE devices information and show it out
-    scanPromise.then(() => {
-        setTimeout(function() {
-            getDevices();
-        }, 1000);
-    }).catch(util.errorHandler);
+            });
+        })
+        // Step2. Scan 5 seconds to look for BLE devices
+        .then(() => {
+            return scanPromiseCreator(1000);
+        }).then(() => {
+            return scanPromiseCreator(timeout);
+        })
+        // Step3. Get BLE devices information and show it out
+        .then(() => {
+            setTimeout(function() {
+                getDevices();
+            }, 1000);
+        })
+        .catch(util.errorHandler);
 })(process.argv[2]);
