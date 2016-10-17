@@ -117,6 +117,8 @@ function getDevices() {
 
     // Step3. Get BLE devices information and show it out
     scanPromise.then(() => {
-        getDevices();
+        setTimeout(function() {
+            getDevices();
+        }, 1000);
     }).catch(util.errorHandler);
 })(process.argv[2]);
