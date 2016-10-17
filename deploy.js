@@ -4,28 +4,36 @@ var bleConfig = require("./lib/bleconfig.js");
 function usage() {
 	console.log("usage: node deploy.js [option]");
 	console.log("option:");
-	console.log(util.rpad("-l, --local", 16), "create or update" + bleConfig.sampleConfig + " at current folder");
 	console.log(util.rpad("-g, --global", 16), "update " + bleConfig.samplePath + bleConfig.sampleConfig);
+	console.log(util.rpad("-f, --force", 16), "force reset the ble_gateway.json to default value");
 }
 
-function parseArgv(argv) {
-	argv = (argv + "").toLowerCase().trim();
+function parseArgv(argvs) {
+	var options = {};
+	argvs.forEach((argv) => {
+		argv = (argv + "").toLowerCase().trim();
 
-	if (argv === "-l" || argv === "--local") {
-		return true;
-	} else if (argv === "-g" || argv === "--global") {
-		return false;
-	}
+		if (argv === "-g" || argv === "--global") {
+			options["isLocal"] = false;
+		} else if (argv === "-f" || argv === "--force") {
+			options["forceUpdate"] = true;
+		} else {
+			throw ("Unknown argument " + argv);
+		}
+	});
+	return options;
 }
 
-(function(argv) {
-	var isLocal = parseArgv(argv || "-l");
-	if (isLocal === undefined) {
+(function(argvs) {
+	var options = {};
+	try {
+		options = parseArgv(argvs);
+	} catch (err) {
 		usage();
 		return;
 	}
 
-	bleConfig.create(isLocal, (stdout, error) => {
+	bleConfig.create(options, (stdout, error) => {
 		if (error) {
 			util.errorHandler(error);
 			return;
@@ -34,4 +42,4 @@ function parseArgv(argv) {
 		console.log("ble_gateway_hl successfully created. To run the sample, use following command:");
 		console.log("'cd " + bleConfig.samplePath + "; ./" + bleConfig.sampleBinary + " " + stdout + "'");
 	});
-})(process.argv[2]);
+})(process.argv.slice(2));
