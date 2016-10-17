@@ -4,8 +4,8 @@ var bleConfig = require("./lib/bleconfig.js");
 function usage() {
 	console.log("usage: node deploy.js [option]");
 	console.log("option:");
-	console.log(util.rpad("-g, --global", 16), "update " + bleConfig.samplePath + bleConfig.sampleConfig);
-	console.log(util.rpad("-f, --force", 16), "force reset the ble_gateway.json to default value");
+	console.log(util.rpad("", 4), util.rpad("-g, --global", 16), "update " + bleConfig.samplePath + bleConfig.sampleConfig);
+	console.log(util.rpad("", 4), util.rpad("-f, --force", 16), "force reset the ble_gateway.json to default value");
 }
 
 function parseArgv(argvs) {
