@@ -1,5 +1,5 @@
-var bluetoothctl = require("./bluetoothctl.js");
-var util = require("./util.js");
+var bluetoothctl = require("./lib/bluetoothctl.js");
+var util = require("./lib/util.js");
 
 (function(mac) {
     // check whether the mac address is the correct one
