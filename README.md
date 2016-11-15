@@ -3,7 +3,7 @@ Author: yuwzho
 Date: 2016/10/12
 ---
 
-> Already merged into repo: [iot-hub-c-intel-nuc-gateway-getting-started](https://github.com/Azure-Samples/iot-hub-c-intel-nuc-gateway-getting-started). 
+> Already merged into repo: [iot-hub-c-intel-nuc-gateway-getting-started/Tools](https://github.com/Azure-Samples/iot-hub-c-intel-nuc-gateway-getting-started/blob/master/Tools). 
 
 # bledisco - bluetooth device discovery
 
